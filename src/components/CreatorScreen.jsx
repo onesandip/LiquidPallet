@@ -127,7 +127,7 @@ export function CreatorScreen({
 
             {/* LIVE RECIPE PROPORTION BARS (Section 15 Spec) */}
             <div className="mt-2.5 w-full max-w-xs px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[9px] font-mono text-neutral-300 grid grid-cols-2 gap-x-2 gap-y-1 text-left">
-              <div>COF: <span className="text-white font-bold">{colorData.asciiBars?.coffee}</span> {colorData.coffeePercent}%</div>
+              <div>ESP: <span className="text-white font-bold">{colorData.asciiBars?.coffee}</span> {colorData.coffeePercent}%</div>
               <div>MLK: <span className="text-white font-bold">{colorData.asciiBars?.milk}</span> {colorData.milkPercent}%</div>
               <div>RST: <span className="text-white font-bold">{colorData.asciiBars?.roast}</span> R{roast}</div>
               <div>SWT: <span className="text-white font-bold">{colorData.asciiBars?.sweetness}</span> {sweetness}g</div>
@@ -146,12 +146,12 @@ export function CreatorScreen({
             </span>
           </div>
 
-          {/* SLIDER 1: COFFEE */}
+          {/* SLIDER 1: ESPRESSO */}
           <div className="space-y-1">
             <div className="flex justify-between items-center text-xs">
               <span className="font-bold text-white flex items-center gap-1.5">
                 <span>☕</span>
-                <span>COFFEE</span>
+                <span>ESPRESSO</span>
               </span>
               <span className="font-mono text-amber-400 font-semibold">{coffee}% ({coffee < 40 ? 'Light' : coffee < 75 ? 'Balanced' : 'Strong'})</span>
             </div>

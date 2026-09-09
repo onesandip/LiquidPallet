@@ -61,7 +61,7 @@ export function SummaryScreen({ colorData, coffee, milk, roast, sweetness, onEdi
           <div className="mt-4 pt-3 border-t border-white/10 space-y-2 text-left">
             <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between">
-                <span className="text-neutral-400">Coffee:</span>
+                <span className="text-neutral-400">Espresso:</span>
                 <span className="text-white font-bold">{colorData.coffeePercent}% ({coffee}% Extraction)</span>
               </div>
               <div className="flex justify-between">
