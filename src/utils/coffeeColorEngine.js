@@ -1,160 +1,406 @@
 /**
- * LiquidPalette - Coffee Color Blending Physics Engine
- * Implements realistic fluid absorption and optical blending models
- * for coffee, milk, roast intensity, and sweetness.
+ * LiquidPalette — Deterministic Physical Coffee Color Mixing Engine
+ * Single Source of Truth for Coffee Recipe -> Physics -> Color -> Naming
+ * 
+ * Implements a Kubelka-Munk inspired optical model for absorbing coffee
+ * melanoidin pigments and scattering milk micelles, strictly bounded to
+ * the authentic natural coffee color gamut.
  */
 
-export function blendCoffeePhysics(coffee, milk, roast, sweetness) {
-  // coffee: 20 to 100
-  // milk: 0 to 90
-  // roast: 1 (Light Blonde) to 5 (Dark Italian)
-  // sweetness: 0 to 20
+// --- 1. NORMALIZATION & BOUNDARIES ---
+export function normalizeRecipe(raw = {}) {
+  const coffee = Math.max(20, Math.min(100, Number(raw.coffee ?? 62)));
+  const milk = Math.max(0, Math.min(90, Number(raw.milk ?? 38)));
+  const roast = Math.max(1, Math.min(5, Number(raw.roast ?? 3)));
+  const sweetness = Math.max(0, Math.min(20, Number(raw.sweetness ?? 8)));
 
-  const roastNorm = (roast - 1) / 4; // 0.0 (Light Blonde) to 1.0 (Dark Italian)
-  const coffeeNorm = (coffee - 20) / 80; // 0.0 (Light 20%) to 1.0 (Strong 100%)
+  return { coffee, milk, roast, sweetness };
+}
 
-  // 1. Base espresso pigment colors across roast spectrum:
-  // Roast 1 (Blonde): Warm vibrant golden/cinnamon amber
-  // Roast 5 (Dark Italian): Deep obsidian black-brown
-  const blondeR = 178, blondeG = 104, blondeB = 40;
-  const darkR = 24,   darkG = 11,   darkB = 6;
+// --- 2. VOLUMETRIC INGREDIENT RATIOS ---
+export function calculateIngredientRatios(recipe) {
+  const { coffee, milk, roast, sweetness } = normalizeRecipe(recipe);
 
-  let baseR = Math.round(blondeR * (1 - roastNorm) + darkR * roastNorm);
-  let baseG = Math.round(blondeG * (1 - roastNorm) + darkG * roastNorm);
-  let baseB = Math.round(blondeB * (1 - roastNorm) + darkB * roastNorm);
-
-  // 2. Coffee Intensity effect on base coffee:
-  // Low intensity (20%) dilutes the pigment, making it lighter and more translucent
-  // High intensity (100%) concentrates the pigment, making it dark, rich, and opaque
-  const dilution = (1 - coffeeNorm); // 1.0 at 20% coffee, 0.0 at 100% coffee
-  baseR = Math.round(baseR + dilution * (224 - baseR) * 0.48);
-  baseG = Math.round(baseG + dilution * (172 - baseG) * 0.48);
-  baseB = Math.round(baseB + dilution * (116 - baseB) * 0.48);
-
-  // 3. Milk blending with pigment-power weighting:
-  const milkNorm = milk / 100;
-  const milkR = 248, milkG = 240, milkB = 224;
-
-  // Higher coffee intensity and darker roast resist milk lightening
-  const pigmentPower = (0.35 + 0.65 * coffeeNorm) * (0.65 + 0.35 * roastNorm);
-  // Milk visual weight curve:
-  const visualMilk = Math.pow(milkNorm, 0.58 + 0.48 * pigmentPower);
-
-  let r = Math.round(baseR * (1 - visualMilk) + milkR * visualMilk);
-  let g = Math.round(baseG * (1 - visualMilk) + milkG * visualMilk);
-  let b = Math.round(baseB * (1 - visualMilk) + milkB * visualMilk);
-
-  // 4. Sweetness glaze (caramel amber tones)
-  const sweetWeight = sweetness / 20;
-  r = Math.min(255, Math.round(r + sweetWeight * 12));
-  g = Math.min(255, Math.round(g + sweetWeight * 6));
-  b = Math.max(0, Math.round(b - sweetWeight * 8));
-
-  // Clamp RGB values
-  r = Math.max(0, Math.min(255, r));
-  g = Math.max(0, Math.min(255, g));
-  b = Math.max(0, Math.min(255, b));
-
-  const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
-
-  // Dynamic poetic descriptor based on exact profile
-  let descriptor = "Balanced Caramel";
-  let notes = "Toasted Cocoa • Honeyed Crema";
-
-  if (milk <= 8) {
-    if (roast >= 4) {
-      descriptor = coffee >= 80 ? "Obsidian Dark Espresso" : "Midnight French Roast";
-      notes = "Smoky Dark Chocolate • Molasses";
-    } else if (roast >= 2) {
-      descriptor = coffee >= 80 ? "Intense Ristretto" : "Bold Americano Crema";
-      notes = "Toasted Walnut • Cedar";
-    } else {
-      descriptor = "Golden Blonde Extraction";
-      notes = "Meyer Lemon • Floral Honey";
-    }
-  } else if (milk <= 28) {
-    if (roast >= 4) {
-      descriptor = "Caramel Bold";
-      notes = "Burnt Sugar • Roasted Hazelnut";
-    } else if (roast >= 2) {
-      descriptor = "Toasted Cortado Hue";
-      notes = "Pecan • Dark Cocoa Nibs";
-    } else {
-      descriptor = "Amber Macchiato";
-      notes = "Golden Caramel • Vanilla Pod";
-    }
-  } else if (milk <= 58) {
-    if (roast >= 4) {
-      descriptor = "Smoky Mocha Velvet";
-      notes = "Bittersweet Cocoa • Velvety Crema";
-    } else if (roast >= 2) {
-      descriptor = "Balanced Caramel";
-      notes = "Buttery Toffee • Warm Cinnamon";
-    } else {
-      descriptor = "Blonde Silk Flat White";
-      notes = "Almond Butter • Sweet Cream";
-    }
-  } else if (milk <= 78) {
-    if (roast >= 4) {
-      descriptor = "Hazelnut Café Latte";
-      notes = "Milk Chocolate • Roasted Chestnut";
-    } else if (roast >= 2) {
-      descriptor = "Creamy Honey Latte";
-      notes = "Wildflower Honey • Steamed Microfoam";
-    } else {
-      descriptor = "Silky Vanilla Dawn";
-      notes = "Crème Brûlée • Sweet Brioche";
-    }
-  } else {
-    descriptor = roast >= 3 ? "Velvet Cloud au Lait" : "Ivory Silk Crema";
-    notes = "Froth Cream • Delicate Espresso Mist";
-  }
-
-  // Volumetric breakdown
-  const totalParts = coffee + milk;
-  const coffeePct = Math.round((coffee / totalParts) * 100);
-  const milkPct = 100 - coffeePct;
-
-  const roastNames = ["Light Blonde", "Medium-Light", "Medium Roast", "Medium-Dark", "Dark Italian"];
-  const roastLabel = roastNames[roast - 1];
-
-  let sweetLabel = "None";
-  if (sweetness >= 15) sweetLabel = "Sweet (15g)";
-  else if (sweetness >= 8) sweetLabel = "Medium (10g)";
-  else if (sweetness > 0) sweetLabel = "Low (5g)";
-
-  const recipeSummary = `${coffeePct}% Coffee · ${milkPct}% Milk · ${roastLabel} · ${sweetLabel}`;
+  // Volumetric proportions in cup
+  const totalFluidParts = coffee + milk;
+  const coffeeRatio = coffee / totalFluidParts;
+  const milkRatio = milk / totalFluidParts;
+  const roastRatio = (roast - 1) / 4; // 0.0 (Blonde) to 1.0 (Dark Italian)
+  const sweetRatio = sweetness / 20;  // 0.0 (None) to 1.0 (Sweet)
 
   return {
-    r, g, b, hex, descriptor, notes, coffeePct, milkPct, roastLabel, sweetLabel, recipeSummary
+    coffee,
+    milk,
+    roast,
+    sweetness,
+    coffeeRatio,
+    milkRatio,
+    roastRatio,
+    sweetRatio,
+    coffeePercent: Math.round(coffeeRatio * 100),
+    milkPercent: Math.round(milkRatio * 100)
   };
 }
 
-export const SIGNATURE_50_SHADES = [
-  { hex: '#160B06', name: 'Obsidian Espresso', coffee: 100, milk: 0, roast: 5, sweetness: 0 },
-  { hex: '#23110A', name: 'Midnight French', coffee: 90, milk: 0, roast: 4, sweetness: 0 },
-  { hex: '#31180E', name: 'Double Shot Ristretto', coffee: 95, milk: 5, roast: 4, sweetness: 0 },
-  { hex: '#422013', name: 'Smoky Dark Roast', coffee: 85, milk: 10, roast: 4, sweetness: 5 },
-  { hex: '#582B1B', name: 'Toasted Chestnut', coffee: 80, milk: 15, roast: 3, sweetness: 5 },
-  { hex: '#6E3722', name: 'Cortado Bold', coffee: 75, milk: 20, roast: 4, sweetness: 5 },
-  { hex: '#7D3F28', name: 'Pecan Macchiato', coffee: 70, milk: 25, roast: 3, sweetness: 10 },
-  { hex: '#8E593B', name: 'Caramel Bold', coffee: 72, milk: 28, roast: 4, sweetness: 5 },
-  { hex: '#9E6543', name: 'Cinnamon Bark', coffee: 65, milk: 32, roast: 3, sweetness: 5 },
-  { hex: '#A96F42', name: 'Balanced Caramel', coffee: 62, milk: 38, roast: 3, sweetness: 8 },
-  { hex: '#B57C4F', name: 'Warm Toffee Crema', coffee: 58, milk: 42, roast: 3, sweetness: 10 },
-  { hex: '#C28B5E', name: 'Silk Flat White', coffee: 52, milk: 48, roast: 3, sweetness: 5 },
-  { hex: '#CD9A6F', name: 'Golden Honey Latte', coffee: 46, milk: 54, roast: 2, sweetness: 10 },
-  { hex: '#D7A981', name: 'Hazelnut au Lait', coffee: 40, milk: 60, roast: 3, sweetness: 10 },
-  { hex: '#DFB794', name: 'Blonde Velvet', coffee: 35, milk: 65, roast: 1, sweetness: 8 },
-  { hex: '#E7C6A8', name: 'Vanilla Steamer', coffee: 28, milk: 72, roast: 2, sweetness: 15 },
-  { hex: '#EED5BD', name: 'Dawn Mist Cream', coffee: 22, milk: 78, roast: 2, sweetness: 5 },
-  { hex: '#F4E4D3', name: 'Ivory Silk Crema', coffee: 15, milk: 85, roast: 1, sweetness: 0 }
+// --- 3. PHYSICALLY GROUNDED KUBELKA-MUNK MIXING MODEL ---
+/**
+ * Maps recipe parameters into authentic coffee color space.
+ * Mathematical Guarantees:
+ * - Increasing Milk monotonically increases luminance (never darkens).
+ * - Increasing Coffee intensity monotonically decreases luminance (never lightens).
+ * - Increasing Roast monotonically deepens/darkens the tone (never lightens).
+ * - Sweetness alters descriptor & subtle sheen without corrupting liquid color.
+ */
+export function mixCoffeeColor(recipe) {
+  const ratios = calculateIngredientRatios(recipe);
+  const { coffee, milk, roast, sweetness, coffeeNorm, milkRatio, roastRatio, sweetRatio } = {
+    ...ratios,
+    coffeeNorm: (ratios.coffee - 20) / 80.0
+  };
+
+  // 1. BASE ESPRESSO PIGMENT (Across Roast Spectrum)
+  // Roast 1 (Light Blonde): Warm amber/cinnamon [110, 52, 22]
+  // Roast 5 (Dark Italian): Dense obsidian [22, 10, 5]
+  const baseR = 110 * (1 - roastRatio) + 22 * roastRatio;
+  const baseG = 52 * (1 - roastRatio) + 10 * roastRatio;
+  const baseB = 22 * (1 - roastRatio) + 5 * roastRatio;
+
+  // 2. COFFEE INTENSITY DILUTION / CONCENTRATION
+  // Low coffee intensity (20%) dilutes the pigment into a lighter amber extraction
+  // High coffee intensity (100%) concentrates into a dense, opaque extraction
+  const dilution = 1.0 - Math.pow(coffeeNorm, 0.9);
+  const dilR = baseR + dilution * (175 - baseR) * 0.45;
+  const dilG = baseG + dilution * (105 - baseG) * 0.45;
+  const dilB = baseB + dilution * (50 - baseB) * 0.45;
+
+  // 3. MILK LIGHT SCATTERING (Kubelka-Munk Model)
+  // Higher coffee intensity and darker roast increase pigment resistance to milk whitening
+  const pigmentPower = (0.45 + 0.55 * coffeeNorm) * (0.65 + 0.35 * roastRatio);
+  const effectiveMilk = Math.pow(milkRatio, 0.70 + 0.40 * pigmentPower);
+
+  // Steamed milk target: creamy off-white [246, 236, 214]
+  let r = Math.round(dilR * (1 - effectiveMilk) + 246 * effectiveMilk);
+  let g = Math.round(dilG * (1 - effectiveMilk) + 236 * effectiveMilk);
+  let b = Math.round(dilB * (1 - effectiveMilk) + 214 * effectiveMilk);
+
+  // 4. SWEETNESS CONTRIBUTION (Subtle luster only, <2% luminance variance)
+  r = Math.min(255, Math.round(r + sweetRatio * 4));
+  g = Math.min(255, Math.round(g + sweetRatio * 1));
+  b = Math.max(0, Math.round(b - sweetRatio * 3));
+
+  // --- 5. CONTROLLED COFFEE GAMUT VALIDATION ---
+  const validated = validateCoffeeGamut(r, g, b);
+  const hex = `#${((1 << 24) + (validated.r << 16) + (validated.g << 8) + validated.b).toString(16).slice(1).toUpperCase()}`;
+
+  // Generate ID and Name
+  const coffeeId = generateCoffeeID(hex, ratios);
+  const nameData = generateCoffeeName(ratios, validated);
+  const descriptors = generateRecipeDescriptor(ratios);
+
+  return {
+    ...ratios,
+    r: validated.r,
+    g: validated.g,
+    b: validated.b,
+    hex,
+    coffeeId,
+    name: nameData.name,
+    tagline: nameData.tagline,
+    descriptors: descriptors.text,
+    asciiBars: descriptors.bars,
+    toneCategory: nameData.category
+  };
+}
+
+// --- 4. STRICT COFFEE GAMUT ENFORCEMENT ---
+export function validateCoffeeGamut(r, g, b) {
+  // Ensure warm coffee chrominance: Red >= Green >= Blue
+  r = Math.max(16, Math.min(252, Math.round(r)));
+  g = Math.max(8, Math.min(r - 4, Math.round(g)));
+  b = Math.max(4, Math.min(g - 4, Math.round(b)));
+
+  // Prevent unnatural desaturation / graying
+  const minRedSurplus = Math.max(8, Math.round(r * 0.12));
+  if (r - g < minRedSurplus) {
+    g = r - minRedSurplus;
+  }
+  const minGreenSurplus = Math.max(6, Math.round(g * 0.14));
+  if (g - b < minGreenSurplus) {
+    b = g - minGreenSurplus;
+  }
+
+  return {
+    r: Math.max(12, Math.min(252, r)),
+    g: Math.max(6, Math.min(244, g)),
+    b: Math.max(4, Math.min(235, b))
+  };
+}
+
+// --- 5. COFFEE COLOR ID GENERATION ---
+export function generateCoffeeID(hex, ratios) {
+  // Generate structured ID like LP-7F42
+  const hexClean = hex.replace('#', '');
+  const code = hexClean.length >= 4 ? hexClean.slice(0, 4) : '7F42';
+  return `LP-${code}`;
+}
+
+// --- 6. SOPHISTICATED COFFEE NAME GENERATION ---
+export function generateCoffeeName(ratios, rgb) {
+  const { milk, roast, coffee, sweetness } = ratios;
+  const luminance = (rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114);
+
+  // Controlled categories matching the specification
+  if (milk <= 8) {
+    if (roast >= 4) {
+      return {
+        name: coffee >= 80 ? "Midnight Roast" : "Dark Velvet",
+        tagline: "Dense Obsidian • Smoky Cocoa Nibs",
+        category: "Near-black espresso"
+      };
+    } else if (roast >= 2) {
+      return {
+        name: "Obsidian Flame",
+        tagline: "Toasted Walnut • Cedar Extraction",
+        category: "Dark brown"
+      };
+    } else {
+      return {
+        name: "Amber Extraction",
+        tagline: "Meyer Lemon • Honeyed Crema",
+        category: "Blonde espresso"
+      };
+    }
+  } else if (milk <= 28) {
+    if (roast >= 4) {
+      return {
+        name: "Caramel Ember",
+        tagline: "Burnt Sugar • Roasted Hazelnut",
+        category: "Deep mocha"
+      };
+    } else if (roast >= 2) {
+      return {
+        name: "Cocoa Mist",
+        tagline: "Pecan Bark • Semi-sweet Cocoa",
+        category: "Deep mocha"
+      };
+    } else {
+      return {
+        name: "Amber Crema",
+        tagline: "Warm Honey • Golden Crema",
+        category: "Medium coffee brown"
+      };
+    }
+  } else if (milk <= 58) {
+    if (roast >= 4) {
+      return {
+        name: "Golden Mocha",
+        tagline: "Bittersweet Truffle • Silky Crema",
+        category: "Medium coffee brown"
+      };
+    } else if (roast >= 2) {
+      return {
+        name: sweetness >= 12 ? "Brown Sugar Cloud" : "Caramel Ember",
+        tagline: "Toasted Toffee • Warm Cinnamon",
+        category: "Caramel"
+      };
+    } else {
+      return {
+        name: "Cream Drift",
+        tagline: "Almond Butter • Sweet Cream",
+        category: "Light caramel"
+      };
+    }
+  } else if (milk <= 78) {
+    if (roast >= 4) {
+      return {
+        name: "Toasted Pecan",
+        tagline: "Roasted Chestnut • Creamy Microfoam",
+        category: "Cream coffee"
+      };
+    } else if (roast >= 2) {
+      return {
+        name: "Dawn Silk",
+        tagline: "Silky Vanilla • Steamed Cream",
+        category: "Cream coffee"
+      };
+    } else {
+      return {
+        name: "Blonde Silk",
+        tagline: "Sweet Brioche • Delicate Foam",
+        category: "Latte"
+      };
+    }
+  } else {
+    return {
+      name: "Ivory Cloud",
+      tagline: "Velvet Cream • Subtle Espresso Mist",
+      category: "Latte"
+    };
+  }
+}
+
+// --- 7. RECIPE DESCRIPTORS & ASCII BARS ---
+export function generateRecipeDescriptor(ratios) {
+  const { coffee, milk, roast, sweetness } = ratios;
+
+  let body = "Balanced";
+  if (coffee >= 75) body = "Bold";
+  else if (coffee <= 35) body = "Light";
+
+  let dairy = "Balanced Milk";
+  if (milk === 0) dairy = "Black";
+  else if (milk <= 25) dairy = "Splash";
+  else if (milk >= 65) dairy = "Very Creamy";
+  else if (milk >= 40) dairy = "Creamy";
+
+  let sweet = "No Sweetness";
+  if (sweetness >= 15) sweet = "Sweet";
+  else if (sweetness >= 8) sweet = "Medium Sweet";
+  else if (sweetness > 0) sweet = "Low Sweetness";
+
+  const text = `${body} · ${dairy} · ${sweet}`;
+
+  // Unicode bar visualization
+  const makeBar = (val, max = 100, len = 10) => {
+    const filled = Math.min(len, Math.max(0, Math.round((val / max) * len)));
+    return "█".repeat(filled) + "░".repeat(len - filled);
+  };
+
+  const bars = {
+    coffee: makeBar(coffee, 100, 8),
+    milk: makeBar(milk, 90, 8),
+    roast: makeBar(roast, 5, 8),
+    sweetness: makeBar(sweetness, 20, 8)
+  };
+
+  return { text, bars };
+}
+
+// --- 8. PRESETS FOR QUICK ORDER ---
+export const QUICK_ORDER_PRESETS = [
+  {
+    id: 'black',
+    label: 'BLACK',
+    sublabel: 'Bold & intense',
+    coffee: 90,
+    milk: 0,
+    roast: 4,
+    sweetness: 0
+  },
+  {
+    id: 'balanced',
+    label: 'BALANCED',
+    sublabel: 'Classic everyday coffee',
+    coffee: 62,
+    milk: 38,
+    roast: 3,
+    sweetness: 6
+  },
+  {
+    id: 'creamy',
+    label: 'CREAMY',
+    sublabel: 'Smooth & milky',
+    coffee: 35,
+    milk: 75,
+    roast: 2,
+    sweetness: 8
+  },
+  {
+    id: 'bold',
+    label: 'BOLD',
+    sublabel: 'Strong & dark',
+    coffee: 85,
+    milk: 18,
+    roast: 4,
+    sweetness: 0
+  },
+  {
+    id: 'sweet',
+    label: 'SWEET',
+    sublabel: 'Dessert-like',
+    coffee: 50,
+    milk: 55,
+    roast: 3,
+    sweetness: 18
+  }
 ];
 
-export const PRESETS = [
-  { id: 'black', label: 'BLACK', desc: 'Strong · No milk', coffee: 90, milk: 0, roast: 4, sweetness: 0 },
-  { id: 'balanced', label: 'BALANCED', desc: 'Medium coffee · Medium milk', coffee: 62, milk: 38, roast: 3, sweetness: 5 },
-  { id: 'creamy', label: 'CREAMY', desc: 'Light coffee · High milk', coffee: 30, milk: 75, roast: 2, sweetness: 8 },
-  { id: 'bold', label: 'BOLD', desc: 'High coffee · Low milk', coffee: 80, milk: 18, roast: 4, sweetness: 0 },
-  { id: 'sweet', label: 'SWEET', desc: 'Balanced coffee · Creamy · Sweet', coffee: 50, milk: 55, roast: 3, sweetness: 18 },
-];
+// --- 9. REALISTIC SURPRISE ME GENERATOR ---
+// Constrained to sensible boundaries so coffee is always delicious
+export function generateSensibleSurprise() {
+  const coffee = Math.floor(Math.random() * (90 - 30 + 1)) + 30; // 30% to 90%
+  const milk = Math.floor(Math.random() * (70 - 10 + 1)) + 10;     // 10% to 70%
+  const roast = Math.floor(Math.random() * (5 - 2 + 1)) + 2;      // Roast 2 to 5
+  const sweetness = Math.floor(Math.random() * 16);               // 0 to 15g
+
+  return {
+    coffee,
+    milk,
+    roast,
+    sweetness,
+    ...mixCoffeeColor({ coffee, milk, roast, sweetness })
+  };
+}
+
+// --- 10. COLOR ENGINE VERIFICATION & REGRESSION BENCHMARK ---
+export function runColorRegressionTests() {
+  const tests = [
+    {
+      id: 'test-1',
+      name: '100% Black Coffee',
+      expectedTone: 'Very dark brown / near-black',
+      recipe: { coffee: 90, milk: 0, roast: 4, sweetness: 0 }
+    },
+    {
+      id: 'test-2',
+      name: '80% Coffee + 20% Milk',
+      expectedTone: 'Dark brown',
+      recipe: { coffee: 80, milk: 20, roast: 3, sweetness: 0 }
+    },
+    {
+      id: 'test-3',
+      name: '60% Coffee + 40% Milk',
+      expectedTone: 'Medium brown / mocha',
+      recipe: { coffee: 60, milk: 40, roast: 3, sweetness: 0 }
+    },
+    {
+      id: 'test-4',
+      name: '40% Coffee + 60% Milk',
+      expectedTone: 'Light caramel / latte',
+      recipe: { coffee: 40, milk: 60, roast: 3, sweetness: 0 }
+    },
+    {
+      id: 'test-5',
+      name: '20% Coffee + 80% Milk',
+      expectedTone: 'Very light coffee / cream',
+      recipe: { coffee: 20, milk: 80, roast: 3, sweetness: 0 }
+    }
+  ];
+
+  const results = tests.map(t => {
+    const mixed = mixCoffeeColor(t.recipe);
+    const lum = (mixed.r * 0.299 + mixed.g * 0.587 + mixed.b * 0.114);
+    return {
+      ...t,
+      hex: mixed.hex,
+      rgb: `rgb(${mixed.r}, ${mixed.g}, ${mixed.b})`,
+      luminance: Math.round(lum),
+      name: mixed.name,
+      category: mixed.toneCategory
+    };
+  });
+
+  // Verify strict monotonic lightness progression:
+  // Each step with more milk MUST be strictly lighter than previous step
+  let monotonicPassed = true;
+  for (let i = 1; i < results.length; i++) {
+    if (results[i].luminance <= results[i - 1].luminance) {
+      monotonicPassed = false;
+    }
+  }
+
+  return {
+    allPassed: monotonicPassed,
+    results
+  };
+}

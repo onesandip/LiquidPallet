@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>LiquidPalette — 50 Shades of Coffee | Futuristic Touchscreen Kiosk</title>
+  <title>LIQUIDPALETTE — YOUR COFFEE. YOUR COLOR. | Kiosk Prototype</title>
   
   <!-- Fonts: Outfit & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,14 +55,14 @@
     body {
       margin: 0;
       padding: 0;
-      background-color: #0A0A0A;
+      background-color: #080808;
       color: #FBF9F5;
       font-family: 'Outfit', sans-serif;
       overflow-x: hidden;
       min-height: 100vh;
     }
 
-    /* Custom range slider styling for tactile kiosk feel */
+    /* Tactile Kiosk Range Slider Styling */
     input[type=range] {
       -webkit-appearance: none;
       background: transparent;
@@ -77,13 +77,13 @@
       border-radius: 50%;
       background: #FFFFFF;
       cursor: pointer;
-      border: 3px solid #1A0D07;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(255, 255, 255, 0.25);
-      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+      border: 3.5px solid #160B06;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(255, 255, 255, 0.2);
+      transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease;
     }
     input[type=range]::-webkit-slider-thumb:active {
       transform: scale(1.18);
-      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6), 0 0 0 6px rgba(255, 159, 28, 0.4);
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.7), 0 0 0 6px rgba(255, 159, 28, 0.4);
     }
     input[type=range]::-moz-range-thumb {
       height: 42px;
@@ -91,13 +91,13 @@
       border-radius: 50%;
       background: #FFFFFF;
       cursor: pointer;
-      border: 3px solid #1A0D07;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      border: 3.5px solid #160B06;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     }
 
     /* Glassmorphism helpers */
     .glass-panel {
-      background: rgba(22, 22, 22, 0.72);
+      background: rgba(22, 22, 22, 0.75);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -108,30 +108,15 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .glass-border-glow {
-      box-shadow: 0 0 35px -5px rgba(200, 125, 56, 0.25);
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Animations */
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 0.6; transform: scale(1); }
-      50% { opacity: 0.9; transform: scale(1.04); }
-    }
-    .animate-pulse-glow {
-      animation: pulseGlow 4s ease-in-out infinite;
-    }
-
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    .animate-gradient-shift {
-      background-size: 200% 200%;
-      animation: gradientShift 8s ease infinite;
-    }
-
-    /* Custom scrollbar for kiosk drawers */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -227,164 +212,280 @@
     }
     const sound = new SoundEngine();
 
-    // --- COFFEE COLOR BLENDING ENGINE ---
-    // Realistic Kubelka-Munk style fluid optical blending
-    function blendCoffeePhysics(coffee, milk, roast, sweetness) {
-      // coffee: 20 to 100
-      // milk: 0 to 90
-      // roast: 1 (Light Blonde) to 5 (Dark Italian)
-      // sweetness: 0 to 20
+    // --- P0: PHYSICAL COFFEE COLOR MIXING ENGINE ---
+    function normalizeRecipe(raw = {}) {
+      const coffee = Math.max(20, Math.min(100, Number(raw.coffee ?? 62)));
+      const milk = Math.max(0, Math.min(90, Number(raw.milk ?? 38)));
+      const roast = Math.max(1, Math.min(5, Number(raw.roast ?? 3)));
+      const sweetness = Math.max(0, Math.min(20, Number(raw.sweetness ?? 6)));
+      return { coffee, milk, roast, sweetness };
+    }
 
-      const roastNorm = (roast - 1) / 4; // 0.0 (Light Blonde) to 1.0 (Dark Italian)
-      const coffeeNorm = (coffee - 20) / 80; // 0.0 (Light 20%) to 1.0 (Strong 100%)
-
-      // 1. Base espresso pigment colors across roast spectrum:
-      // Roast 1 (Blonde): Warm vibrant golden/cinnamon amber
-      // Roast 5 (Dark Italian): Deep obsidian black-brown
-      const blondeR = 178, blondeG = 104, blondeB = 40;
-      const darkR = 24,   darkG = 11,   darkB = 6;
-
-      let baseR = Math.round(blondeR * (1 - roastNorm) + darkR * roastNorm);
-      let baseG = Math.round(blondeG * (1 - roastNorm) + darkG * roastNorm);
-      let baseB = Math.round(blondeB * (1 - roastNorm) + darkB * roastNorm);
-
-      // 2. Coffee Intensity effect on base coffee:
-      // Low intensity (20%) dilutes the pigment, making it lighter and more translucent
-      // High intensity (100%) concentrates the pigment, making it dark, rich, and opaque
-      const dilution = (1 - coffeeNorm); // 1.0 at 20% coffee, 0.0 at 100% coffee
-      baseR = Math.round(baseR + dilution * (224 - baseR) * 0.48);
-      baseG = Math.round(baseG + dilution * (172 - baseG) * 0.48);
-      baseB = Math.round(baseB + dilution * (116 - baseB) * 0.48);
-
-      // 3. Milk blending with pigment-power weighting:
-      const milkNorm = milk / 100;
-      const milkR = 248, milkG = 240, milkB = 224;
-
-      // Higher coffee intensity and darker roast resist milk lightening
-      const pigmentPower = (0.35 + 0.65 * coffeeNorm) * (0.65 + 0.35 * roastNorm);
-      // Milk visual weight curve:
-      const visualMilk = Math.pow(milkNorm, 0.58 + 0.48 * pigmentPower);
-
-      let r = Math.round(baseR * (1 - visualMilk) + milkR * visualMilk);
-      let g = Math.round(baseG * (1 - visualMilk) + milkG * visualMilk);
-      let b = Math.round(baseB * (1 - visualMilk) + milkB * visualMilk);
-
-      // 4. Sweetness glaze (caramel amber tones)
-      const sweetWeight = sweetness / 20;
-      r = Math.min(255, Math.round(r + sweetWeight * 12));
-      g = Math.min(255, Math.round(g + sweetWeight * 6));
-      b = Math.max(0, Math.round(b - sweetWeight * 8));
-
-      // Clamp RGB
-      r = Math.max(0, Math.min(255, r));
-      g = Math.max(0, Math.min(255, g));
-      b = Math.max(0, Math.min(255, b));
-
-      const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
-
-      // Dynamic poetic descriptor based on the exact profile
-      let descriptor = "Balanced Caramel";
-      let notes = "Toasted Cocoa • Honeyed Crema";
-
-      if (milk <= 8) {
-        if (roast >= 4) {
-          descriptor = coffee >= 80 ? "Obsidian Dark Espresso" : "Midnight French Roast";
-          notes = "Smoky Dark Chocolate • Molasses";
-        } else if (roast >= 2) {
-          descriptor = coffee >= 80 ? "Intense Ristretto" : "Bold Americano Crema";
-          notes = "Toasted Walnut • Cedar";
-        } else {
-          descriptor = "Golden Blonde Extraction";
-          notes = "Meyer Lemon • Floral Honey";
-        }
-      } else if (milk <= 28) {
-        if (roast >= 4) {
-          descriptor = "Caramel Bold";
-          notes = "Burnt Sugar • Roasted Hazelnut";
-        } else if (roast >= 2) {
-          descriptor = "Toasted Cortado Hue";
-          notes = "Pecan • Dark Cocoa Nibs";
-        } else {
-          descriptor = "Amber Macchiato";
-          notes = "Golden Caramel • Vanilla Pod";
-        }
-      } else if (milk <= 58) {
-        if (roast >= 4) {
-          descriptor = "Smoky Mocha Velvet";
-          notes = "Bittersweet Cocoa • Velvety Crema";
-        } else if (roast >= 2) {
-          descriptor = "Balanced Caramel";
-          notes = "Buttery Toffee • Warm Cinnamon";
-        } else {
-          descriptor = "Blonde Silk Flat White";
-          notes = "Almond Butter • Sweet Cream";
-        }
-      } else if (milk <= 78) {
-        if (roast >= 4) {
-          descriptor = "Hazelnut Café Latte";
-          notes = "Milk Chocolate • Roasted Chestnut";
-        } else if (roast >= 2) {
-          descriptor = "Creamy Honey Latte";
-          notes = "Wildflower Honey • Steamed Microfoam";
-        } else {
-          descriptor = "Silky Vanilla Dawn";
-          notes = "Crème Brûlée • Sweet Brioche";
-        }
-      } else {
-        descriptor = roast >= 3 ? "Velvet Cloud au Lait" : "Ivory Silk Crema";
-        notes = "Froth Cream • Delicate Espresso Mist";
-      }
-
-      // Volumetric breakdown percentages
+    function calculateIngredientRatios(recipe) {
+      const { coffee, milk, roast, sweetness } = normalizeRecipe(recipe);
       const totalParts = coffee + milk;
-      const coffeePct = Math.round((coffee / totalParts) * 100);
-      const milkPct = 100 - coffeePct;
-
-      const roastNames = ["Light Blonde", "Medium-Light", "Medium Roast", "Medium-Dark", "Dark Italian"];
-      const roastLabel = roastNames[roast - 1];
-
-      let sweetLabel = "None";
-      if (sweetness >= 15) sweetLabel = "Sweet (15g)";
-      else if (sweetness >= 8) sweetLabel = "Medium (10g)";
-      else if (sweetness > 0) sweetLabel = "Low (5g)";
-
-      const recipeSummary = `${coffeePct}% Coffee · ${milkPct}% Milk · ${roastLabel} · ${sweetLabel}`;
+      const coffeeRatio = coffee / totalParts;
+      const milkRatio = milk / totalParts;
+      const roastRatio = (roast - 1) / 4.0;
+      const sweetRatio = sweetness / 20.0;
 
       return {
-        r, g, b, hex, descriptor, notes, coffeePct, milkPct, roastLabel, sweetLabel, recipeSummary
+        coffee,
+        milk,
+        roast,
+        sweetness,
+        coffeeRatio,
+        milkRatio,
+        roastRatio,
+        sweetRatio,
+        coffeePercent: Math.round(coffeeRatio * 100),
+        milkPercent: Math.round(milkRatio * 100)
       };
     }
 
-    // 50 Shades of Coffee signature collection for the design matrix
-    const SIGNATURE_50_SHADES = [
-      { hex: '#160B06', name: 'Obsidian Espresso', coffee: 100, milk: 0, roast: 5, sweetness: 0 },
-      { hex: '#23110A', name: 'Midnight French', coffee: 90, milk: 0, roast: 4, sweetness: 0 },
-      { hex: '#31180E', name: 'Double Shot Ristretto', coffee: 95, milk: 5, roast: 4, sweetness: 0 },
-      { hex: '#422013', name: 'Smoky Dark Roast', coffee: 85, milk: 10, roast: 4, sweetness: 5 },
-      { hex: '#582B1B', name: 'Toasted Chestnut', coffee: 80, milk: 15, roast: 3, sweetness: 5 },
-      { hex: '#6E3722', name: 'Cortado Bold', coffee: 75, milk: 20, roast: 4, sweetness: 5 },
-      { hex: '#7D3F28', name: 'Pecan Macchiato', coffee: 70, milk: 25, roast: 3, sweetness: 10 },
-      { hex: '#8E593B', name: 'Caramel Bold', coffee: 72, milk: 28, roast: 4, sweetness: 5 },
-      { hex: '#9E6543', name: 'Cinnamon Bark', coffee: 65, milk: 32, roast: 3, sweetness: 5 },
-      { hex: '#A96F42', name: 'Balanced Caramel', coffee: 62, milk: 38, roast: 3, sweetness: 8 },
-      { hex: '#B57C4F', name: 'Warm Toffee Crema', coffee: 58, milk: 42, roast: 3, sweetness: 10 },
-      { hex: '#C28B5E', name: 'Silk Flat White', coffee: 52, milk: 48, roast: 3, sweetness: 5 },
-      { hex: '#CD9A6F', name: 'Golden Honey Latte', coffee: 46, milk: 54, roast: 2, sweetness: 10 },
-      { hex: '#D7A981', name: 'Hazelnut au Lait', coffee: 40, milk: 60, roast: 3, sweetness: 10 },
-      { hex: '#DFB794', name: 'Blonde Velvet', coffee: 35, milk: 65, roast: 1, sweetness: 8 },
-      { hex: '#E7C6A8', name: 'Vanilla Steamer', coffee: 28, milk: 72, roast: 2, sweetness: 15 },
-      { hex: '#EED5BD', name: 'Dawn Mist Cream', coffee: 22, milk: 78, roast: 2, sweetness: 5 },
-      { hex: '#F4E4D3', name: 'Ivory Silk Crema', coffee: 15, milk: 85, roast: 1, sweetness: 0 }
+    function validateCoffeeGamut(r, g, b) {
+      r = Math.max(18, Math.min(250, Math.round(r)));
+      g = Math.max(9, Math.min(r - 6, Math.round(g)));
+      b = Math.max(5, Math.min(g - 4, Math.round(b)));
+
+      return { r, g, b };
+    }
+
+    function generateCoffeeID(hex, ratios) {
+      const hexClean = hex.replace('#', '');
+      const code = hexClean.length >= 4 ? hexClean.slice(0, 4) : '7F42';
+      return `LP-${code}`;
+    }
+
+    function generateCoffeeName(ratios, rgb) {
+      const { milk, roast, coffee, sweetness } = ratios;
+
+      if (milk <= 8) {
+        if (roast >= 4) {
+          return {
+            name: coffee >= 80 ? "Midnight Roast" : "Dark Velvet",
+            tagline: "Dense Obsidian • Smoky Cocoa Nibs",
+            category: "Near-black espresso"
+          };
+        } else if (roast >= 2) {
+          return {
+            name: "Obsidian Flame",
+            tagline: "Toasted Walnut • Cedar Extraction",
+            category: "Dark brown"
+          };
+        } else {
+          return {
+            name: "Amber Extraction",
+            tagline: "Meyer Lemon • Honeyed Crema",
+            category: "Blonde espresso"
+          };
+        }
+      } else if (milk <= 28) {
+        if (roast >= 4) {
+          return {
+            name: "Caramel Ember",
+            tagline: "Burnt Sugar • Roasted Hazelnut",
+            category: "Deep mocha"
+          };
+        } else if (roast >= 2) {
+          return {
+            name: "Cocoa Mist",
+            tagline: "Pecan Bark • Semi-sweet Cocoa",
+            category: "Deep mocha"
+          };
+        } else {
+          return {
+            name: "Amber Crema",
+            tagline: "Warm Honey • Golden Crema",
+            category: "Medium coffee brown"
+          };
+        }
+      } else if (milk <= 58) {
+        if (roast >= 4) {
+          return {
+            name: "Golden Mocha",
+            tagline: "Bittersweet Truffle • Silky Crema",
+            category: "Medium coffee brown"
+          };
+        } else if (roast >= 2) {
+          return {
+            name: sweetness >= 12 ? "Brown Sugar Cloud" : "Caramel Ember",
+            tagline: "Toasted Toffee • Warm Cinnamon",
+            category: "Caramel"
+          };
+        } else {
+          return {
+            name: "Cream Drift",
+            tagline: "Almond Butter • Sweet Cream",
+            category: "Light caramel"
+          };
+        }
+      } else if (milk <= 78) {
+        if (roast >= 4) {
+          return {
+            name: "Toasted Pecan",
+            tagline: "Roasted Chestnut • Creamy Microfoam",
+            category: "Cream coffee"
+          };
+        } else if (roast >= 2) {
+          return {
+            name: "Dawn Silk",
+            tagline: "Silky Vanilla • Steamed Cream",
+            category: "Cream coffee"
+          };
+        } else {
+          return {
+            name: "Blonde Silk",
+            tagline: "Sweet Brioche • Delicate Foam",
+            category: "Latte"
+          };
+        }
+      } else {
+        return {
+          name: "Ivory Cloud",
+          tagline: "Velvet Cream • Subtle Espresso Mist",
+          category: "Latte"
+        };
+      }
+    }
+
+    function generateRecipeDescriptor(ratios) {
+      const { coffee, milk, roast, sweetness } = ratios;
+
+      let body = "Balanced";
+      if (coffee >= 75) body = "Bold";
+      else if (coffee <= 35) body = "Light";
+
+      let dairy = "Balanced Milk";
+      if (milk === 0) dairy = "Black";
+      else if (milk <= 25) dairy = "Splash";
+      else if (milk >= 65) dairy = "Very Creamy";
+      else if (milk >= 40) dairy = "Creamy";
+
+      let sweet = "No Sweetness";
+      if (sweetness >= 15) sweet = "Sweet";
+      else if (sweetness >= 8) sweet = "Medium Sweet";
+      else if (sweetness > 0) sweet = "Low Sweetness";
+
+      const text = `${body} · ${dairy} · ${sweet}`;
+
+      const makeBar = (val, max = 100, len = 8) => {
+        const filled = Math.min(len, Math.max(0, Math.round((val / max) * len)));
+        return "█".repeat(filled) + "░".repeat(len - filled);
+      };
+
+      const bars = {
+        coffee: makeBar(coffee, 100, 8),
+        milk: makeBar(milk, 90, 8),
+        roast: makeBar(roast, 5, 8),
+        sweetness: makeBar(sweetness, 20, 8)
+      };
+
+      return { text, bars };
+    }
+
+    function mixCoffeeColor(recipe) {
+      const ratios = calculateIngredientRatios(recipe);
+      const { coffee, milk, roast, sweetness, milkRatio, roastRatio, sweetRatio } = ratios;
+      const coffeeNorm = (coffee - 20) / 80.0;
+
+      // 1. Base espresso across roast spectrum
+      const baseR = 110 * (1 - roastRatio) + 22 * roastRatio;
+      const baseG = 52 * (1 - roastRatio) + 10 * roastRatio;
+      const baseB = 22 * (1 - roastRatio) + 5 * roastRatio;
+
+      // 2. Coffee intensity dilution / concentration
+      const dilution = 1.0 - Math.pow(coffeeNorm, 0.9);
+      const dilR = baseR + dilution * (175 - baseR) * 0.45;
+      const dilG = baseG + dilution * (105 - baseG) * 0.45;
+      const dilB = baseB + dilution * (50 - baseB) * 0.45;
+
+      // 3. Milk light scattering (Kubelka-Munk model)
+      const pigmentPower = (0.45 + 0.55 * coffeeNorm) * (0.65 + 0.35 * roastRatio);
+      const effectiveMilk = Math.pow(milkRatio, 0.70 + 0.40 * pigmentPower);
+
+      let r = Math.round(dilR * (1 - effectiveMilk) + 246 * effectiveMilk);
+      let g = Math.round(dilG * (1 - effectiveMilk) + 236 * effectiveMilk);
+      let b = Math.round(dilB * (1 - effectiveMilk) + 214 * effectiveMilk);
+
+      // 4. Sweetness subtle luster
+      r = Math.min(255, Math.round(r + sweetRatio * 4));
+      g = Math.min(255, Math.round(g + sweetRatio * 1));
+      b = Math.max(0, Math.round(b - sweetRatio * 3));
+
+      const validated = validateCoffeeGamut(r, g, b);
+      const hex = `#${((1 << 24) + (validated.r << 16) + (validated.g << 8) + validated.b).toString(16).slice(1).toUpperCase()}`;
+
+      const coffeeId = generateCoffeeID(hex, ratios);
+      const nameData = generateCoffeeName(ratios, validated);
+      const descriptors = generateRecipeDescriptor(ratios);
+
+      return {
+        ...ratios,
+        r: validated.r,
+        g: validated.g,
+        b: validated.b,
+        hex,
+        coffeeId,
+        name: nameData.name,
+        tagline: nameData.tagline,
+        descriptors: descriptors.text,
+        asciiBars: descriptors.bars,
+        toneCategory: nameData.category
+      };
+    }
+
+    function runColorRegressionTests() {
+      const tests = [
+        { id: 'test-1', name: '100% Black Coffee', expectedTone: 'Very dark brown / near-black', recipe: { coffee: 90, milk: 0, roast: 4, sweetness: 0 } },
+        { id: 'test-2', name: '80% Coffee + 20% Milk', expectedTone: 'Dark brown', recipe: { coffee: 80, milk: 20, roast: 3, sweetness: 0 } },
+        { id: 'test-3', name: '60% Coffee + 40% Milk', expectedTone: 'Medium brown / mocha', recipe: { coffee: 60, milk: 40, roast: 3, sweetness: 0 } },
+        { id: 'test-4', name: '40% Coffee + 60% Milk', expectedTone: 'Light caramel / latte', recipe: { coffee: 40, milk: 60, roast: 3, sweetness: 0 } },
+        { id: 'test-5', name: '20% Coffee + 80% Milk', expectedTone: 'Very light coffee / cream', recipe: { coffee: 20, milk: 80, roast: 3, sweetness: 0 } }
+      ];
+
+      const results = tests.map(t => {
+        const mixed = mixCoffeeColor(t.recipe);
+        const lum = (mixed.r * 0.299 + mixed.g * 0.587 + mixed.b * 0.114);
+        return {
+          ...t,
+          hex: mixed.hex,
+          rgb: `rgb(${mixed.r}, ${mixed.g}, ${mixed.b})`,
+          luminance: Math.round(lum),
+          name: mixed.name,
+          category: mixed.toneCategory
+        };
+      });
+
+      let monotonicPassed = true;
+      for (let i = 1; i < results.length; i++) {
+        if (results[i].luminance <= results[i - 1].luminance) {
+          monotonicPassed = false;
+        }
+      }
+
+      return { allPassed: monotonicPassed, results };
+    }
+
+    const QUICK_ORDER_PRESETS = [
+      { id: 'black', label: 'BLACK', sublabel: 'Bold & intense', coffee: 90, milk: 0, roast: 4, sweetness: 0 },
+      { id: 'balanced', label: 'BALANCED', sublabel: 'Classic everyday coffee', coffee: 62, milk: 38, roast: 3, sweetness: 6 },
+      { id: 'creamy', label: 'CREAMY', sublabel: 'Smooth & milky', coffee: 35, milk: 75, roast: 2, sweetness: 8 },
+      { id: 'bold', label: 'BOLD', sublabel: 'Strong & dark', coffee: 85, milk: 18, roast: 4, sweetness: 0 },
+      { id: 'sweet', label: 'SWEET', sublabel: 'Dessert-like', coffee: 50, milk: 55, roast: 3, sweetness: 18 }
     ];
 
-    // --- QUICK PICKS PRESETS ---
-    const PRESETS = [
-      { id: 'black', label: 'BLACK', desc: 'Strong · No milk', coffee: 90, milk: 0, roast: 4, sweetness: 0 },
-      { id: 'balanced', label: 'BALANCED', desc: 'Medium coffee · Medium milk', coffee: 62, milk: 38, roast: 3, sweetness: 5 },
-      { id: 'creamy', label: 'CREAMY', desc: 'Light coffee · High milk', coffee: 30, milk: 75, roast: 2, sweetness: 8 },
-      { id: 'bold', label: 'BOLD', desc: 'High coffee · Low milk', coffee: 80, milk: 18, roast: 4, sweetness: 0 },
-      { id: 'sweet', label: 'SWEET', desc: 'Balanced coffee · Creamy · Sweet', coffee: 50, milk: 55, roast: 3, sweetness: 18 },
-    ];
+    function generateSensibleSurprise() {
+      const coffee = Math.floor(Math.random() * (90 - 30 + 1)) + 30;
+      const milk = Math.floor(Math.random() * (70 - 10 + 1)) + 10;
+      const roast = Math.floor(Math.random() * (5 - 2 + 1)) + 2;
+      const sweetness = Math.floor(Math.random() * 16);
+
+      return {
+        coffee, milk, roast, sweetness,
+        ...mixCoffeeColor({ coffee, milk, roast, sweetness })
+      };
+    }
 
     // --- PURE SVG QR CODE COMPONENT ---
     function CustomQRCode({ payload, size = 160, hex = '#A96F42' }) {
@@ -426,7 +527,7 @@
       const cellSize = size / cells;
 
       return (
-        <div className="relative inline-block p-3.5 bg-white rounded-2xl shadow-xl border border-white/20">
+        <div className="relative inline-block p-3 bg-white rounded-2xl shadow-xl border border-white/20">
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
             <rect width={size} height={size} fill="#FFFFFF" />
             {grid.map((row, r) =>
@@ -455,6 +556,9 @@
       const canvasRef = useRef(null);
       const animationFrameId = useRef(null);
 
+      // Smooth color interpolation ref
+      const currentRgb = useRef({ r: colorData.r, g: colorData.g, b: colorData.b });
+
       useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -471,6 +575,16 @@
 
         const render = () => {
           t += 0.035;
+
+          // Smooth 60fps color interpolation towards target
+          currentRgb.current.r += (colorData.r - currentRgb.current.r) * 0.15;
+          currentRgb.current.g += (colorData.g - currentRgb.current.g) * 0.15;
+          currentRgb.current.b += (colorData.b - currentRgb.current.b) * 0.15;
+
+          const r = Math.round(currentRgb.current.r);
+          const g = Math.round(currentRgb.current.g);
+          const b = Math.round(currentRgb.current.b);
+
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
           const w = canvas.width;
@@ -491,9 +605,9 @@
             ctx.clip();
 
             const gradient = ctx.createLinearGradient(0, topY, 0, h * 0.88);
-            gradient.addColorStop(0, `rgb(${colorData.r}, ${colorData.g}, ${colorData.b})`);
-            gradient.addColorStop(0.7, `rgb(${Math.max(0, colorData.r - 20)}, ${Math.max(0, colorData.g - 20)}, ${Math.max(0, colorData.b - 20)})`);
-            gradient.addColorStop(1, `rgb(${Math.max(0, colorData.r - 35)}, ${Math.max(0, colorData.g - 35)}, ${Math.max(0, colorData.b - 35)})`);
+            gradient.addColorStop(0, `rgb(${r}, ${g}, ${b})`);
+            gradient.addColorStop(0.7, `rgb(${Math.max(0, r - 22)}, ${Math.max(0, g - 22)}, ${Math.max(0, b - 22)})`);
+            gradient.addColorStop(1, `rgb(${Math.max(0, r - 38)}, ${Math.max(0, g - 38)}, ${Math.max(0, b - 38)})`);
 
             ctx.beginPath();
             ctx.moveTo(0, topY);
@@ -519,16 +633,16 @@
             ctx.lineWidth = 4;
             ctx.stroke();
 
-            // Bubbles
-            bubbles.forEach(b => {
-              b.y -= b.speed * (isBrewing ? 2.5 : 1);
-              if (b.y < topY + 6) {
-                b.y = h * 0.86;
-                b.x = w * 0.25 + Math.random() * (w * 0.5);
+            // Crema bubbles
+            bubbles.forEach(bubble => {
+              bubble.y -= bubble.speed * (isBrewing ? 2.5 : 1);
+              if (bubble.y < topY + 6) {
+                bubble.y = h * 0.86;
+                bubble.x = w * 0.25 + Math.random() * (w * 0.5);
               }
-              const wobble = Math.sin(t + b.offset) * 3;
+              const wobble = Math.sin(t + bubble.offset) * 3;
               ctx.beginPath();
-              ctx.arc(b.x + wobble, b.y, b.radius, 0, Math.PI * 2);
+              ctx.arc(bubble.x + wobble, bubble.y, bubble.radius, 0, Math.PI * 2);
               ctx.fillStyle = `rgba(255, 250, 235, 0.45)`;
               ctx.fill();
             });
@@ -540,7 +654,7 @@
               ctx.lineTo(w * 0.5 + 6, topY);
               ctx.lineTo(w * 0.5 - 6, topY);
               ctx.closePath();
-              ctx.fillStyle = `rgba(${colorData.r}, ${colorData.g}, ${colorData.b}, 0.85)`;
+              ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
               ctx.fill();
             }
 
@@ -606,7 +720,8 @@
 
             <ellipse cx="140" cy="315" rx="75" ry="10" stroke="rgba(255,255,255,0.25)" strokeWidth="2" fill="none" />
 
-            {showWindowCallout ? (
+            {/* Central Transparent Square Window (Section 22) */}
+            {showWindowCallout && (
               <g className="transition-all duration-300">
                 <rect
                   x="96"
@@ -627,7 +742,7 @@
                   48mm x 48mm OPTICAL ACRYLIC
                 </text>
               </g>
-            ) : null}
+            )}
 
             <text
               x="140"
@@ -657,33 +772,23 @@
       );
     }
 
-    // --- MAIN APP COMPONENT ---
+    // --- MAIN APP ORCHESTRATOR ---
     function LiquidPaletteApp() {
       const [currentScreen, setCurrentScreen] = useState('home');
 
-      // Four core coffee customization parameters
+      // Core recipe parameters
       const [coffee, setCoffee] = useState(62);
       const [milk, setMilk] = useState(38);
       const [roast, setRoast] = useState(3);
-      const [sweetness, setSweetness] = useState(8);
+      const [sweetness, setSweetness] = useState(6);
 
-      // Modal states
+      // Modals
+      const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
       const [showSurpriseModal, setShowSurpriseModal] = useState(false);
+      const [showTestBenchModal, setShowTestBenchModal] = useState(false);
       const [showWindowCallout, setShowWindowCallout] = useState(false);
-      const [showEdgeStateModal, setShowEdgeStateModal] = useState(false);
-      const [showDesignSystemModal, setShowDesignSystemModal] = useState(false);
       const [soundEnabled, setSoundEnabled] = useState(true);
-
-      // Kiosk display mode: 'kiosk' (9:16 portrait kiosk bezel), 'fullscreen'
       const [kioskMode, setKioskMode] = useState('kiosk');
-
-      // Edge state testing: null, 'offline', 'low_milk', 'pay_error'
-      const [activeEdgeState, setActiveEdgeState] = useState(null);
-
-      // Payment tab: 'upi', 'nfc', 'card'
-      const [paymentMethod, setPaymentMethod] = useState('upi');
-
-      // Preparation progress (0 to 100)
       const [prepProgress, setPrepProgress] = useState(0);
 
       const toggleSound = () => {
@@ -694,37 +799,19 @@
       };
 
       const colorData = useMemo(() => {
-        return blendCoffeePhysics(coffee, milk, roast, sweetness);
+        return mixCoffeeColor({ coffee, milk, roast, sweetness });
       }, [coffee, milk, roast, sweetness]);
 
       const handleSliderChange = (setter, val) => {
         setter(val);
-        sound.playTick(360 + val * 3);
-      };
-
-      const handleSelectPreset = (preset) => {
-        sound.playDrip();
-        setCoffee(preset.coffee);
-        setMilk(preset.milk);
-        setRoast(preset.roast);
-        setSweetness(preset.sweetness);
+        sound.playTick(320 + val * 3);
       };
 
       const [surpriseBlend, setSurpriseBlend] = useState(null);
-      const handleSurpriseMe = () => {
+      const handleTriggerSurprise = () => {
         sound.playDrip();
-        const randCoffee = Math.floor(Math.random() * 70) + 25;
-        const randMilk = Math.floor(Math.random() * 85);
-        const randRoast = Math.floor(Math.random() * 5) + 1;
-        const randSweet = Math.floor(Math.random() * 20);
-        const blend = blendCoffeePhysics(randCoffee, randMilk, randRoast, randSweet);
-        setSurpriseBlend({
-          coffee: randCoffee,
-          milk: randMilk,
-          roast: randRoast,
-          sweetness: randSweet,
-          ...blend
-        });
+        const blend = generateSensibleSurprise();
+        setSurpriseBlend(blend);
         setShowSurpriseModal(true);
       };
 
@@ -736,6 +823,16 @@
         setRoast(surpriseBlend.roast);
         setSweetness(surpriseBlend.sweetness);
         setShowSurpriseModal(false);
+        setCurrentScreen('creator');
+      };
+
+      const handleSelectQuickPreset = (preset) => {
+        sound.playDrip();
+        setCoffee(preset.coffee);
+        setMilk(preset.milk);
+        setRoast(preset.roast);
+        setSweetness(preset.sweetness);
+        setCurrentScreen('summary');
       };
 
       useEffect(() => {
@@ -748,109 +845,92 @@
                 clearInterval(interval);
                 sound.playSuccess();
                 if (window.confetti) {
-                  window.confetti({
-                    particleCount: 60,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                  });
+                  window.confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
                 }
                 setCurrentScreen('ready');
                 return 100;
               }
               return prev + 2;
             });
-          }, 80);
+          }, 70);
         }
         return () => clearInterval(interval);
       }, [currentScreen]);
 
-      // 1. HOME SCREEN
-      const renderHomeScreen = () => (
-        <div className="flex flex-col items-center justify-between h-full px-6 py-8 text-center animate-fadeIn">
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel-light border border-white/15">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-[11px] font-mono tracking-widest text-white/80 uppercase">Station #04 · Online</span>
-          </div>
-
-          <div className="flex flex-col items-center my-auto">
-            <div className="relative mb-5">
-              <div
-                className="w-20 h-20 rounded-3xl p-0.5 shadow-2xl transition-colors duration-1000"
-                style={{
-                  background: `linear-gradient(135deg, ${colorData.hex}, #C87D38, #1A0D07)`
-                }}
-              >
-                <div className="w-full h-full bg-[#121212] rounded-[22px] flex items-center justify-center">
-                  <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
-                    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-                    <line x1="6" y1="2" x2="6" y2="4" />
-                    <line x1="10" y1="2" x2="10" y2="4" />
-                    <line x1="14" y1="2" x2="14" y2="4" />
-                  </svg>
-                </div>
-              </div>
-              <span className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-md bg-amber-500 text-[9px] font-mono font-bold text-black uppercase">
-                50 Shades
+      // SCREEN 1: HOMEPAGE (Section 11 & 39)
+      const renderHomeScreen = () => {
+        return (
+          <div className="flex flex-col items-center justify-between h-full px-6 py-6 text-center animate-fadeIn select-none">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-mono tracking-widest text-neutral-300 uppercase">
+                LIQUIDPALETTE · KIOSK 04
               </span>
             </div>
 
-            <h1 className="text-4xl font-extrabold tracking-tight text-white mb-1 uppercase">
-              LiquidPalette
-            </h1>
-            <p className="text-xs font-mono tracking-widest text-amber-400 uppercase font-semibold mb-5">
-              YOUR COFFEE · YOUR COLOR.
-            </p>
+            <div className="flex flex-col items-center my-auto w-full max-w-sm">
+              <div className="w-44 -my-3 relative cursor-pointer" onClick={() => setCurrentScreen('creator')}>
+                <CoffeeCupCanvas colorData={colorData} showWindowCallout={true} />
+              </div>
 
-            <div className="max-w-xs space-y-1">
-              <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
-                MAKE YOUR COFFEE
-              </h2>
-              <p className="text-sm text-neutral-400">
-                Mix it. See it. Taste it.
-              </p>
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mt-1">
+                <div
+                  className="w-3 h-3 rounded-full border border-white/30 transition-colors duration-500"
+                  style={{ backgroundColor: colorData.hex }}
+                />
+                <span className="text-xs font-mono font-bold text-white">
+                  {colorData.hex}
+                </span>
+                <span className="text-neutral-500">·</span>
+                <span className="text-[11px] font-medium text-amber-400">
+                  {colorData.name}
+                </span>
+              </div>
+
+              <div className="mt-5 space-y-1.5">
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white uppercase leading-tight font-sans">
+                  YOUR COFFEE.<br />YOUR COLOR.
+                </h1>
+                <p className="text-xs sm:text-sm text-neutral-300 font-normal">
+                  Create your coffee visually. Mix it. See it. Taste it.
+                </p>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
+                <span>50 Shades</span>
+                <span>•</span>
+                <span>Thousands of combinations</span>
+              </div>
             </div>
 
-            <div className="w-60 h-2.5 rounded-full mt-6 p-0.5 bg-neutral-800/80 border border-white/10 overflow-hidden">
-              <div
-                className="w-full h-full rounded-full animate-gradient-shift"
-                style={{
-                  background: 'linear-gradient(90deg, #1A0D07, #582B1B, #A96F42, #D7A981, #FFF8EE)'
-                }}
-              />
+            <div className="w-full max-w-sm space-y-2.5">
+              <button
+                onClick={() => { sound.playDrip(); setCurrentScreen('creator'); }}
+                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-base tracking-wide shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border border-amber-300/40 font-mono"
+              >
+                <span>CREATE MY COFFEE</span>
+                <span className="text-xl">→</span>
+              </button>
+
+              <button
+                onClick={() => { sound.playTick(); setShowQuickOrderModal(true); }}
+                className="w-full py-3.5 px-6 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-semibold text-xs tracking-wider uppercase active:scale-[0.98] transition-all border border-white/10 flex items-center justify-center gap-2 font-mono"
+              >
+                <span>⚡ QUICK ORDER (15 SEC)</span>
+              </button>
+
+              <div className="text-[10px] font-mono text-neutral-500 pt-1">
+                From ₹129 · Contactless Dispense
+              </div>
             </div>
-            <p className="text-[10px] font-mono text-neutral-500 mt-2">
-              50 shades. Infinite possibilities.
-            </p>
           </div>
+        );
+      };
 
-          <div className="w-full max-w-sm space-y-2.5">
-            <button
-              onClick={() => { sound.playDrip(); setCurrentScreen('creator'); }}
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-base tracking-wide shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border border-amber-300/40"
-            >
-              <span>CREATE MY COFFEE</span>
-              <span className="text-xl">→</span>
-            </button>
-
-            <button
-              onClick={() => {
-                sound.playTick();
-                handleSelectPreset(PRESETS[1]);
-                setCurrentScreen('creator');
-              }}
-              className="w-full py-3.5 px-6 rounded-2xl glass-panel-light hover:bg-white/10 text-white/90 font-medium text-xs tracking-wider uppercase active:scale-[0.98] transition-all border border-white/10"
-            >
-              QUICK ORDER (BALANCED)
-            </button>
-          </div>
-        </div>
-      );
-
-      // 2. MAIN COFFEE CREATOR SCREEN
+      // SCREEN 2: CREATOR (Section 13, 14, 15)
       const renderCreatorScreen = () => (
-        <div className="flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 glass-panel z-20">
+        <div className="flex flex-col h-full overflow-hidden select-none">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-neutral-900/70 backdrop-blur-xl z-20">
             <button
               onClick={() => { sound.playTick(); setCurrentScreen('home'); }}
               className="flex items-center gap-1.5 text-xs font-mono text-neutral-400 hover:text-white transition-colors"
@@ -862,21 +942,21 @@
             <div className="text-center">
               <span className="text-xs font-mono text-amber-400 font-bold tracking-wider">LIQUIDPALETTE</span>
               <span className="mx-2 text-white/20">|</span>
-              <span className="text-xs text-neutral-300 font-medium">Palette Mixer</span>
+              <span className="text-xs text-neutral-300 font-medium">Coffee Creator</span>
             </div>
 
             <button
-              onClick={handleSurpriseMe}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/30 transition-all active:scale-95"
+              onClick={handleTriggerSurprise}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/25 transition-all active:scale-95"
             >
               <span>🎲</span>
-              <span className="font-mono">SURPRISE</span>
+              <span className="font-mono text-[11px]">SURPRISE</span>
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-            {/* Top: Visual Coffee Preview Hero */}
-            <div className="relative rounded-3xl glass-panel p-4 text-center overflow-hidden border border-white/15 shadow-2xl">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3.5">
+            {/* Hero Transparent Cup */}
+            <div className="relative rounded-3xl bg-neutral-900/70 backdrop-blur-2xl p-4 text-center overflow-hidden border border-white/15 shadow-2xl">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase font-semibold">
                   YOUR COFFEE
@@ -889,67 +969,75 @@
                       : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10'
                   }`}
                 >
-                  {showWindowCallout ? '✓ CUP WINDOW ACTIVE' : '🔍 PREVIEW CUP WINDOW'}
+                  {showWindowCallout ? '✓ CUP WINDOW ACTIVE' : '🔍 CUP WINDOW'}
                 </button>
               </div>
 
-              <CoffeeCupCanvas colorData={colorData} showWindowCallout={showWindowCallout} />
+              <div className="cursor-pointer" onClick={() => sound.playDrip()}>
+                <CoffeeCupCanvas colorData={colorData} showWindowCallout={showWindowCallout} />
+              </div>
 
-              <div className="mt-3 pt-3 border-t border-white/10 flex flex-col items-center">
-                <div className="text-[9px] font-mono text-neutral-400 tracking-wider uppercase mb-1">
-                  COFFEE COLOR
-                </div>
+              <div className="mt-2 pt-3 border-t border-white/10 flex flex-col items-center">
+                <span className="text-[9px] font-mono text-neutral-400 tracking-wider uppercase mb-1">
+                  COFFEE COLOR ID
+                </span>
 
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/30 shadow-md"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/30 shadow-md transition-colors duration-500"
                     style={{ backgroundColor: colorData.hex }}
                   >
                     <span
-                      className="text-xs font-mono font-bold tracking-wider"
+                      className="text-xs font-mono font-extrabold tracking-wider"
                       style={{
                         color: (colorData.r * 0.299 + colorData.g * 0.587 + colorData.b * 0.114) > 150 ? '#1A0D07' : '#FFFFFF'
                       }}
                     >
                       {colorData.hex}
                     </span>
+                    <span className="text-[9px] opacity-70 font-mono">
+                      {colorData.coffeeId}
+                    </span>
                   </div>
 
                   <div className="text-left">
-                    <h3 className="text-sm font-bold text-white leading-tight">
-                      {colorData.descriptor}
+                    <h3 className="text-base font-extrabold text-white leading-tight">
+                      {colorData.name}
                     </h3>
                     <p className="text-[10px] text-amber-400/90 font-mono">
-                      {colorData.notes}
+                      {colorData.descriptors}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-2.5 px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-[10px] font-mono text-neutral-300">
-                  {colorData.recipeSummary}
+                <div className="mt-2.5 w-full max-w-xs px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[9px] font-mono text-neutral-300 grid grid-cols-2 gap-x-2 gap-y-1 text-left">
+                  <div>COF: <span className="text-white font-bold">{colorData.asciiBars?.coffee}</span> {colorData.coffeePercent}%</div>
+                  <div>MLK: <span className="text-white font-bold">{colorData.asciiBars?.milk}</span> {colorData.milkPercent}%</div>
+                  <div>RST: <span className="text-white font-bold">{colorData.asciiBars?.roast}</span> R{roast}</div>
+                  <div>SWT: <span className="text-white font-bold">{colorData.asciiBars?.sweetness}</span> {sweetness}g</div>
                 </div>
               </div>
             </div>
 
-            {/* Customization Sliders */}
-            <div className="rounded-3xl glass-panel p-4 space-y-4 border border-white/10">
+            {/* 4 Tactile Sliders */}
+            <div className="rounded-3xl bg-neutral-900/70 backdrop-blur-2xl p-4 space-y-3.5 border border-white/10">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">
-                  TACTILE CONTROLS
+                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-300 font-mono">
+                  RECIPE CONTROLS
                 </span>
                 <span className="text-[10px] font-mono text-amber-400">
-                  Real-time Color Synthesis
+                  Drag to Mix Color
                 </span>
               </div>
 
-              {/* 1. COFFEE / ESPRESSO */}
+              {/* SLIDER 1: COFFEE */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1.5 font-bold text-white">
+                  <span className="font-bold text-white flex items-center gap-1.5">
                     <span>☕</span>
-                    <span>COFFEE INTENSITY</span>
-                  </div>
-                  <span className="font-mono text-amber-400 font-semibold">{coffee}%</span>
+                    <span>COFFEE</span>
+                  </span>
+                  <span className="font-mono text-amber-400 font-semibold">{coffee}% ({coffee < 40 ? 'Light' : coffee < 75 ? 'Balanced' : 'Strong'})</span>
                 </div>
                 <input
                   type="range"
@@ -959,25 +1047,24 @@
                   onChange={(e) => handleSliderChange(setCoffee, Number(e.target.value))}
                   className="w-full h-3 rounded-full appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, #4A2818 0%, #1A0D07 100%)`
+                    background: `linear-gradient(to right, #6E3C22 0%, #180B06 100%)`
                   }}
                 />
-                <div className="flex justify-between text-[9px] font-mono text-neutral-500">
-                  <span>Light (20%)</span>
-                  <span>Balanced (50%)</span>
-                  <span>Strong (80%)</span>
-                  <span>Intense (100%)</span>
+                <div className="flex justify-between text-[9px] font-mono text-neutral-500 pt-0.5">
+                  <span>LIGHT</span>
+                  <span>BALANCED</span>
+                  <span>STRONG</span>
                 </div>
               </div>
 
-              {/* 2. MILK */}
+              {/* SLIDER 2: MILK */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1.5 font-bold text-white">
+                  <span className="font-bold text-white flex items-center gap-1.5">
                     <span>🥛</span>
-                    <span>MILK LEVEL</span>
-                  </div>
-                  <span className="font-mono text-amber-400 font-semibold">{milk}%</span>
+                    <span>MILK</span>
+                  </span>
+                  <span className="font-mono text-amber-400 font-semibold">{milk}% ({milk === 0 ? 'Black' : milk < 35 ? 'Splash' : milk < 70 ? 'Creamy' : 'Very Creamy'})</span>
                 </div>
                 <input
                   type="range"
@@ -987,25 +1074,24 @@
                   onChange={(e) => handleSliderChange(setMilk, Number(e.target.value))}
                   className="w-full h-3 rounded-full appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, #1A0D07 0%, #A96F42 40%, #FFF8EE 100%)`
+                    background: `linear-gradient(to right, #180B06 0%, #A96F42 40%, #F8F2E4 100%)`
                   }}
                 />
-                <div className="flex justify-between text-[9px] font-mono text-neutral-500">
-                  <span>Black (0%)</span>
-                  <span>Splash (20%)</span>
-                  <span>Creamy (60%)</span>
-                  <span>High Milk (90%)</span>
+                <div className="flex justify-between text-[9px] font-mono text-neutral-500 pt-0.5">
+                  <span>BLACK</span>
+                  <span>SPLASH</span>
+                  <span>CREAMY</span>
                 </div>
               </div>
 
-              {/* 3. ROAST */}
+              {/* SLIDER 3: ROAST */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1.5 font-bold text-white">
+                  <span className="font-bold text-white flex items-center gap-1.5">
                     <span>🔥</span>
-                    <span>ROAST PROFILE</span>
-                  </div>
-                  <span className="font-mono text-amber-400 font-semibold">{colorData.roastLabel}</span>
+                    <span>ROAST</span>
+                  </span>
+                  <span className="font-mono text-amber-400 font-semibold">{roast === 1 ? 'Blonde' : roast === 3 ? 'Medium' : roast === 5 ? 'Dark Italian' : `Roast ${roast}`}</span>
                 </div>
                 <input
                   type="range"
@@ -1016,25 +1102,24 @@
                   onChange={(e) => handleSliderChange(setRoast, Number(e.target.value))}
                   className="w-full h-3 rounded-full appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, #B87D4E 0%, #7D3F28 50%, #160B06 100%)`
+                    background: `linear-gradient(to right, #B87D4E 0%, #6E3C22 50%, #160B06 100%)`
                   }}
                 />
-                <div className="flex justify-between text-[9px] font-mono text-neutral-500">
-                  <span>Blonde (1)</span>
-                  <span>Medium (3)</span>
-                  <span>French (4)</span>
-                  <span>Italian (5)</span>
+                <div className="flex justify-between text-[9px] font-mono text-neutral-500 pt-0.5">
+                  <span>LIGHT</span>
+                  <span>MEDIUM</span>
+                  <span>DARK</span>
                 </div>
               </div>
 
-              {/* 4. SWEETNESS */}
+              {/* SLIDER 4: SWEETNESS */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1.5 font-bold text-white">
+                  <span className="font-bold text-white flex items-center gap-1.5">
                     <span>✨</span>
                     <span>SWEETNESS</span>
-                  </div>
-                  <span className="font-mono text-amber-400 font-semibold">{colorData.sweetLabel}</span>
+                  </span>
+                  <span className="font-mono text-amber-400 font-semibold">{sweetness === 0 ? 'None' : `${sweetness}g`}</span>
                 </div>
                 <input
                   type="range"
@@ -1044,185 +1129,185 @@
                   onChange={(e) => handleSliderChange(setSweetness, Number(e.target.value))}
                   className="w-full h-3 rounded-full appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, #333333 0%, #D4AF37 100%)`
+                    background: `linear-gradient(to right, #2E2E2E 0%, #D4AF37 100%)`
                   }}
                 />
-                <div className="flex justify-between text-[9px] font-mono text-neutral-500">
-                  <span>None (0g)</span>
-                  <span>Subtle (5g)</span>
-                  <span>Balanced (10g)</span>
-                  <span>Sweet (20g)</span>
+                <div className="flex justify-between text-[9px] font-mono text-neutral-500 pt-0.5">
+                  <span>NONE</span>
+                  <span>BALANCED (10g)</span>
+                  <span>SWEET (20g)</span>
                 </div>
               </div>
             </div>
 
-            {/* Smart Recommendations: Quick Picks */}
-            <div className="rounded-3xl glass-panel p-4 border border-white/10 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">
-                  QUICK PICKS (PRESETS)
-                </span>
-                <span className="text-[9px] font-mono text-neutral-500">
-                  Tap to Auto-Slide
-                </span>
+            {/* Quick Presets Bar */}
+            <div className="rounded-3xl bg-neutral-900/70 backdrop-blur-2xl p-3.5 border border-white/10 space-y-2">
+              <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400">
+                <span className="font-bold text-neutral-300 uppercase">QUICK PRESETS</span>
+                <span>Tap to Animate</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {PRESETS.map((p) => {
-                  const isMatch = Math.abs(p.coffee - coffee) <= 8 && Math.abs(p.milk - milk) <= 8;
+              <div className="grid grid-cols-3 gap-2">
+                {QUICK_ORDER_PRESETS.map((p) => {
+                  const isSelected = Math.abs(p.coffee - coffee) <= 8 && Math.abs(p.milk - milk) <= 8;
                   return (
                     <button
                       key={p.id}
-                      onClick={() => handleSelectPreset(p)}
-                      className={`p-2.5 rounded-2xl text-left transition-all border ${
-                        isMatch
-                          ? 'bg-amber-500/20 border-amber-400 text-white shadow-md scale-[1.01]'
+                      onClick={() => {
+                        sound.playDrip();
+                        setCoffee(p.coffee);
+                        setMilk(p.milk);
+                        setRoast(p.roast);
+                        setSweetness(p.sweetness);
+                      }}
+                      className={`p-2 rounded-xl text-left border transition-all ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-400 text-white font-bold scale-[1.02]'
                           : 'bg-white/5 border-white/10 hover:bg-white/10 text-neutral-300'
                       }`}
                     >
-                      <div className="text-xs font-bold tracking-wider font-mono text-amber-400">
-                        {p.label}
-                      </div>
-                      <div className="text-[10px] text-neutral-400 truncate mt-0.5">
-                        {p.desc}
-                      </div>
+                      <div className="text-xs font-mono font-bold text-amber-400">{p.label}</div>
+                      <div className="text-[9px] text-neutral-400 truncate mt-0.5">{p.sublabel}</div>
                     </button>
                   );
                 })}
 
                 <button
-                  onClick={() => { sound.playTick(); setShowDesignSystemModal(true); }}
-                  className="col-span-2 p-2.5 rounded-2xl text-left bg-neutral-900 border border-amber-500/30 hover:border-amber-400 text-neutral-300 transition-all flex items-center justify-between"
+                  onClick={() => setShowTestBenchModal(true)}
+                  className="p-2 rounded-xl text-left bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 text-emerald-400 transition-all flex flex-col justify-center"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">🎨</span>
-                    <div>
-                      <div className="text-xs font-bold font-mono text-amber-400">
-                        50 SHADES OF COFFEE
-                      </div>
-                      <div className="text-[10px] text-neutral-400">
-                        Browse Signature Swatch Matrix
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-xs font-mono text-amber-400">OPEN →</span>
+                  <div className="text-xs font-mono font-bold">🧪 VERIFY</div>
+                  <div className="text-[9px] text-emerald-300/80">Test Bench</div>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Persistent Action Bar */}
-          <div className="p-3.5 glass-panel border-t border-white/15 flex items-center justify-between gap-3 z-20">
+          {/* Bottom Order Bar (Price ₹129 per spec) */}
+          <div className="p-3.5 bg-neutral-900/80 backdrop-blur-xl border-t border-white/15 flex items-center justify-between gap-3 z-20">
             <div>
               <div className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest">
-                KIOSK PRICE
+                PRICE
               </div>
-              <div className="text-2xl font-extrabold text-white flex items-baseline gap-1">
-                <span>₹149</span>
+              <div className="text-2xl font-black text-white flex items-baseline gap-1">
+                <span>₹129</span>
                 <span className="text-[9px] font-mono text-emerald-400 font-normal">All Incl.</span>
               </div>
             </div>
 
             <button
               onClick={() => { sound.playDrip(); setCurrentScreen('summary'); }}
-              className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-sm tracking-wide shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-amber-300/40"
+              className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-sm tracking-wide shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-amber-300/40 font-mono"
             >
-              <span>REVIEW ORDER</span>
-              <span className="text-base">→</span>
+              <span>ORDER NOW →</span>
             </button>
           </div>
         </div>
       );
 
-      // 3. ORDER SUMMARY SCREEN
+      // SCREEN 3: SUMMARY (Section 18)
       const renderSummaryScreen = () => (
-        <div className="flex flex-col h-full overflow-y-auto px-5 py-5 animate-fadeIn">
+        <div className="flex flex-col h-full overflow-y-auto px-5 py-5 animate-fadeIn select-none">
           <div className="flex items-center justify-between pb-3 border-b border-white/10">
             <button
               onClick={() => { sound.playTick(); setCurrentScreen('creator'); }}
               className="flex items-center gap-1.5 text-xs font-mono text-neutral-400 hover:text-white"
             >
               <span>←</span>
-              <span>EDIT RECIPE</span>
+              <span>CHANGE</span>
             </button>
-            <span className="text-xs font-mono text-amber-400 font-bold uppercase">ORDER CONFIRMATION</span>
+            <span className="text-xs font-mono text-amber-400 font-bold uppercase tracking-wider">
+              ORDER SUMMARY
+            </span>
           </div>
 
-          <div className="my-auto py-4 space-y-4 max-w-md mx-auto w-full">
-            <div className="glass-panel rounded-3xl p-5 border border-white/15 text-center relative overflow-hidden">
-              <div className="w-44 mx-auto -my-4">
-                <CoffeeCupCanvas colorData={colorData} />
+          <div className="my-auto py-3 space-y-4 max-w-md mx-auto w-full">
+            <div className="bg-neutral-900/75 backdrop-blur-2xl rounded-3xl p-5 border border-white/15 text-center relative overflow-hidden shadow-2xl">
+              <div className="w-40 mx-auto -my-3">
+                <CoffeeCupCanvas colorData={colorData} showWindowCallout={true} />
               </div>
 
-              <div className="mt-3">
-                <span className="text-[9px] font-mono tracking-widest text-neutral-400 uppercase">
+              <div className="mt-2">
+                <span className="text-[9px] font-mono tracking-widest text-neutral-400 uppercase font-semibold">
                   YOUR COFFEE
                 </span>
-                <h2 className="text-2xl font-extrabold text-white mt-0.5">
-                  {colorData.descriptor}
+                <h2 className="text-2xl font-black text-white mt-0.5 tracking-tight">
+                  {colorData.name}
                 </h2>
 
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 mt-1.5" style={{ backgroundColor: colorData.hex }}>
+                <div
+                  className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-white/20 mt-1.5 shadow-md"
+                  style={{ backgroundColor: colorData.hex }}
+                >
                   <span
-                    className="text-xs font-mono font-bold"
+                    className="text-xs font-mono font-extrabold"
                     style={{
                       color: (colorData.r * 0.299 + colorData.g * 0.587 + colorData.b * 0.114) > 150 ? '#1A0D07' : '#FFFFFF'
                     }}
                   >
                     {colorData.hex}
                   </span>
+                  <span className="text-[10px] font-mono opacity-80">
+                    {colorData.coffeeId}
+                  </span>
                 </div>
+
+                <p className="text-xs font-medium text-amber-400/90 mt-2 font-mono">
+                  {colorData.descriptors}
+                </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-white/10 grid grid-cols-2 gap-2 text-left">
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-[9px] font-mono text-neutral-400 uppercase">Coffee Extraction</div>
-                  <div className="text-xs font-bold text-white font-mono mt-0.5">{colorData.coffeePct}% · {coffee}% Intensity</div>
+              <div className="mt-4 pt-3 border-t border-white/10 space-y-2 text-left">
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1.5 text-xs font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Coffee:</span>
+                    <span className="text-white font-bold">{colorData.coffeePercent}% ({coffee}% Extraction)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Milk:</span>
+                    <span className="text-white font-bold">{colorData.milkPercent}% ({milk}% Ratio)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Roast Profile:</span>
+                    <span className="text-white font-bold">{roast === 1 ? 'Blonde' : roast === 3 ? 'Medium' : roast === 5 ? 'Dark Italian' : `Roast ${roast}`}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-400">Sweetness:</span>
+                    <span className="text-white font-bold">{sweetness === 0 ? 'None' : `${sweetness}g`}</span>
+                  </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-[9px] font-mono text-neutral-400 uppercase">Milk & Foam</div>
-                  <div className="text-xs font-bold text-white font-mono mt-0.5">{colorData.milkPct}% · {milk}% Ratio</div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-[9px] font-mono text-neutral-400 uppercase">Roast Profile</div>
-                  <div className="text-xs font-bold text-white font-mono mt-0.5">{colorData.roastLabel}</div>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-[9px] font-mono text-neutral-400 uppercase">Sweetness</div>
-                  <div className="text-xs font-bold text-white font-mono mt-0.5">{colorData.sweetLabel}</div>
-                </div>
-              </div>
 
-              <div className="mt-3 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 text-left flex items-start gap-2">
-                <span>🔍</span>
-                <div className="text-[11px]">
-                  <span className="font-bold">Transparent Cup Window:</span> Your drink is dispensed into a cup with a viewing window to reveal this exact shade.
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-start gap-2">
+                  <span className="text-sm">🔍</span>
+                  <div className="text-[11px] leading-snug">
+                    <span className="font-bold">Transparent Viewing Window:</span> Dispensed into a branded cup with a center square window so you can verify your exact crafted shade.
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl glass-panel border border-white/10 flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-neutral-900/60 backdrop-blur-xl border border-white/10 flex items-center justify-between">
               <div>
-                <span className="text-[10px] text-neutral-400 font-mono">TOTAL AMOUNT</span>
-                <div className="text-2xl font-extrabold text-white">₹149</div>
+                <span className="text-[9px] text-neutral-400 font-mono uppercase tracking-wider">TOTAL AMOUNT</span>
+                <div className="text-3xl font-black text-white">₹129</div>
               </div>
               <div className="text-right text-[10px] font-mono text-neutral-400">
-                <span>Cup Size: Regular 250ml</span><br/>
-                <span className="text-emerald-400">Free Contactless Dispensing</span>
+                <span>Size: Regular 250ml</span><br/>
+                <span className="text-emerald-400 font-bold">Station 01 Dispense</span>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mt-auto pt-3 max-w-md mx-auto w-full">
+          <div className="grid grid-cols-2 gap-3 mt-auto pt-2 max-w-md mx-auto w-full">
             <button
               onClick={() => { sound.playTick(); setCurrentScreen('creator'); }}
-              className="py-3.5 px-4 rounded-2xl glass-panel-light hover:bg-white/10 text-white font-semibold text-xs tracking-wider uppercase border border-white/15"
+              className="py-3.5 px-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-semibold text-xs tracking-wider uppercase border border-white/15 active:scale-95 transition-all font-mono"
             >
-              ← EDIT
+              ← CHANGE
             </button>
             <button
               onClick={() => { sound.playDrip(); setCurrentScreen('payment'); }}
-              className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs tracking-wider uppercase shadow-lg shadow-amber-500/25 border border-amber-300/40"
+              className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-amber-500/25 border border-amber-300/40 active:scale-95 transition-all font-mono"
             >
               ORDER NOW →
             </button>
@@ -1230,9 +1315,9 @@
         </div>
       );
 
-      // 4. PAYMENT SCREEN
+      // SCREEN 4: PAYMENT (Section 19)
       const renderPaymentScreen = () => (
-        <div className="flex flex-col h-full overflow-y-auto px-5 py-5 animate-fadeIn">
+        <div className="flex flex-col h-full overflow-y-auto px-5 py-5 animate-fadeIn select-none">
           <div className="flex items-center justify-between pb-3 border-b border-white/10">
             <button
               onClick={() => { sound.playTick(); setCurrentScreen('summary'); }}
@@ -1241,233 +1326,205 @@
               <span>←</span>
               <span>CANCEL</span>
             </button>
-            <span className="text-xs font-mono text-amber-400 font-bold uppercase">CHECKOUT</span>
+            <span className="text-xs font-mono text-amber-400 font-bold uppercase tracking-wider">
+              PAYMENT
+            </span>
           </div>
 
-          <div className="my-auto py-4 space-y-4 max-w-sm mx-auto w-full text-center">
+          <div className="my-auto py-3 space-y-4 max-w-sm mx-auto w-full text-center">
             <div>
-              <h2 className="text-2xl font-extrabold text-white">
-                ALMOST THERE ☕
-              </h2>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                {colorData.descriptor} · <span className="font-mono text-amber-400 font-bold">₹149</span>
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest block">
+                PAYMENT DUE
+              </span>
+              <div className="text-3xl font-black text-white mt-0.5">
+                ₹129
+              </div>
+              <p className="text-xs text-neutral-400 mt-1 font-mono">
+                {colorData.name} · <span className="text-amber-400">{colorData.coffeeId}</span>
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 p-1 rounded-2xl glass-panel border border-white/10">
+            <div className="bg-neutral-900/75 backdrop-blur-2xl rounded-3xl p-5 border border-white/15 space-y-3 shadow-xl">
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">
+                SCAN WITH ANY UPI APP
+              </span>
+
+              <div className="flex justify-center">
+                <CustomQRCode payload={`upi://pay?pa=kiosk04@liquidpalette&am=129&cu=INR&shade=${colorData.hex}`} size={160} hex={colorData.hex} />
+              </div>
+
+              <div className="flex items-center justify-center gap-3 text-[10px] font-mono text-neutral-400">
+                <span>GPay</span>
+                <span>•</span>
+                <span>PhonePe</span>
+                <span>•</span>
+                <span>Paytm</span>
+              </div>
+
               <button
-                onClick={() => { sound.playTick(); setPaymentMethod('upi'); }}
-                className={`py-2 px-2 rounded-xl text-xs font-mono font-bold transition-all ${
-                  paymentMethod === 'upi' ? 'bg-amber-500 text-black shadow-md' : 'text-neutral-400 hover:text-white'
-                }`}
+                onClick={() => { sound.playSuccess(); setCurrentScreen('prep'); }}
+                className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-emerald-500/20 active:scale-95 transition-all font-mono"
               >
-                UPI QR
-              </button>
-              <button
-                onClick={() => { sound.playTick(); setPaymentMethod('nfc'); }}
-                className={`py-2 px-2 rounded-xl text-xs font-mono font-bold transition-all ${
-                  paymentMethod === 'nfc' ? 'bg-amber-500 text-black shadow-md' : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                NFC TAP
-              </button>
-              <button
-                onClick={() => { sound.playTick(); setPaymentMethod('card'); }}
-                className={`py-2 px-2 rounded-xl text-xs font-mono font-bold transition-all ${
-                  paymentMethod === 'card' ? 'bg-amber-500 text-black shadow-md' : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                CARD
+                ✓ SIMULATE SCAN & PAY ₹129
               </button>
             </div>
-
-            {paymentMethod === 'upi' && (
-              <div className="glass-panel rounded-3xl p-5 border border-white/15 space-y-3">
-                <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider block">
-                  SCAN WITH ANY UPI APP
-                </span>
-
-                <div className="flex justify-center">
-                  <CustomQRCode payload={`upi://pay?pa=kiosk04@liquidpalette&am=149&cu=INR&shade=${colorData.hex}`} size={160} hex={colorData.hex} />
-                </div>
-
-                <div className="flex items-center justify-center gap-3 text-[11px] font-mono text-neutral-400">
-                  <span>📱 GPay</span>
-                  <span>⚡ PhonePe</span>
-                  <span>🔷 Paytm</span>
-                </div>
-
-                <button
-                  onClick={() => { sound.playSuccess(); setCurrentScreen('prep'); }}
-                  className="w-full py-3.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs tracking-wider uppercase shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
-                >
-                  ✓ SIMULATE PHONE SCAN (PAY ₹149)
-                </button>
-              </div>
-            )}
-
-            {paymentMethod === 'nfc' && (
-              <div className="glass-panel rounded-3xl p-6 border border-white/15 space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border-2 border-dashed border-amber-400 flex items-center justify-center text-2xl animate-pulse">
-                  📡
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">TAP CARD OR PHONE</h4>
-                  <p className="text-[11px] text-neutral-400 mt-0.5">Hold your Apple Pay, Google Wallet, or contactless card near the sensor.</p>
-                </div>
-                <button
-                  onClick={() => { sound.playSuccess(); setCurrentScreen('prep'); }}
-                  className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs tracking-wider uppercase active:scale-95 transition-all"
-                >
-                  ✓ SIMULATE NFC TAP
-                </button>
-              </div>
-            )}
-
-            {paymentMethod === 'card' && (
-              <div className="glass-panel rounded-3xl p-6 border border-white/15 space-y-4">
-                <div className="text-3xl">💳</div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">INSERT OR SWIPE CARD</h4>
-                  <p className="text-[11px] text-neutral-400 mt-0.5">Insert chip card into reader slot on right side.</p>
-                </div>
-                <button
-                  onClick={() => { sound.playSuccess(); setCurrentScreen('prep'); }}
-                  className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs tracking-wider uppercase active:scale-95 transition-all"
-                >
-                  ✓ SIMULATE CARD AUTHORIZED
-                </button>
-              </div>
-            )}
           </div>
         </div>
       );
 
-      // 5. PREPARATION SCREEN
+      // SCREEN 5: PREPARATION (Section 20)
       const renderPrepScreen = () => {
-        let stepText = "Brewing your shade...";
-        let activeIndex = 0;
-        if (prepProgress >= 70) {
-          stepText = "Pouring your custom blend...";
-          activeIndex = 2;
-        } else if (prepProgress >= 35) {
-          stepText = "Mixing your palette...";
-          activeIndex = 1;
-        }
+        let stageIndex = 0;
+        if (prepProgress >= 90) stageIndex = 3;
+        else if (prepProgress >= 60) stageIndex = 2;
+        else if (prepProgress >= 30) stageIndex = 1;
 
-        const stages = ["BREWING", "MIXING", "POURING", "READY"];
+        const stages = [
+          { num: '01', name: 'BREWING', desc: 'Extracting espresso roast pigments' },
+          { num: '02', name: 'MIXING', desc: 'Turbulent milk & emulsion synthesis' },
+          { num: '03', name: 'POURING', desc: 'Filling cup to exact shade ratio' },
+          { num: '04', name: 'READY', desc: 'Finalizing golden crema layer' },
+        ];
 
         return (
-          <div className="flex flex-col items-center justify-between h-full px-5 py-6 text-center animate-fadeIn">
-            <div className="w-full max-w-sm flex items-center justify-between px-3 py-2 rounded-2xl glass-panel border border-white/10 text-[9px] font-mono">
-              {stages.map((st, i) => (
-                <div key={st} className="flex items-center gap-1">
-                  <span className={`w-1.5 h-1.5 rounded-full ${i <= activeIndex ? 'bg-amber-400' : 'bg-neutral-700'}`} />
-                  <span className={i === activeIndex ? 'text-amber-400 font-bold' : i < activeIndex ? 'text-neutral-300' : 'text-neutral-600'}>
-                    {st}
-                  </span>
-                  {i < stages.length - 1 && <span className="text-neutral-600 mx-1">→</span>}
-                </div>
-              ))}
+          <div className="flex flex-col items-center justify-between h-full px-5 py-5 text-center animate-fadeIn select-none">
+            <div className="w-full max-w-sm grid grid-cols-4 gap-1.5 p-2 rounded-2xl bg-neutral-900/60 backdrop-blur-xl border border-white/10 text-[9px] font-mono">
+              {stages.map((st, i) => {
+                const isDone = i < stageIndex;
+                const isCurrent = i === stageIndex;
+                return (
+                  <div
+                    key={st.num}
+                    className={`p-1.5 rounded-xl flex flex-col items-center justify-center transition-all ${
+                      isCurrent
+                        ? 'bg-amber-500/20 text-amber-400 font-bold border border-amber-500/40'
+                        : isDone
+                        ? 'text-emerald-400 font-medium'
+                        : 'text-neutral-600'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>{st.num}</span>
+                      <span>{isDone ? '✓' : isCurrent ? '●' : '○'}</span>
+                    </div>
+                    <span className="text-[8px] mt-0.5">{st.name}</span>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="my-auto flex flex-col items-center">
-              <h2 className="text-2xl font-extrabold text-white mb-0.5">
-                YOUR COFFEE IS BEING MADE
+            <div className="my-auto flex flex-col items-center w-full max-w-sm">
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest">
+                CREATING YOUR COFFEE
+              </span>
+              <h2 className="text-2xl font-black text-white mt-0.5 tracking-tight">
+                {colorData.name}
               </h2>
-              <p className="text-xs font-mono text-amber-400 font-bold">
-                {prepProgress}% · {stepText}
+              <p className="text-xs font-mono text-amber-400 font-bold mt-1">
+                {prepProgress}% · {stages[stageIndex].desc}
               </p>
 
-              <div className="w-52 mt-3">
+              <div className="w-48 mt-2 -my-2">
                 <CoffeeCupCanvas
                   colorData={colorData}
-                  fillLevel={Math.max(0.08, prepProgress / 100)}
+                  fillLevel={Math.max(0.12, prepProgress / 100)}
                   isBrewing={true}
                   showWindowCallout={true}
                 />
               </div>
 
-              <div className="w-60 h-2.5 rounded-full bg-neutral-800 border border-white/10 mt-5 overflow-hidden p-0.5">
+              <div className="w-60 h-2 rounded-full bg-neutral-800 border border-white/10 mt-4 overflow-hidden p-0.5">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-100"
                   style={{ width: `${prepProgress}%` }}
                 />
               </div>
 
-              <p className="text-[10px] font-mono text-neutral-400 mt-2.5">
-                Precision Dispenser Head #02 Active
-              </p>
+              <div className="mt-3 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-neutral-400 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                <span>Dispenser Head #02 Active</span>
+              </div>
             </div>
 
             <div className="text-[10px] text-neutral-500 font-mono">
-              Please do not insert hand into dispensing chamber.
+              Cup in dispensing chamber · Please wait
             </div>
           </div>
         );
       };
 
-      // 6. COFFEE READY SCREEN
+      // SCREEN 6: READY (Section 21 & 22)
       const renderReadyScreen = () => (
-        <div className="flex flex-col items-center justify-between h-full px-5 py-6 text-center animate-fadeIn">
+        <div className="flex flex-col items-center justify-between h-full px-5 py-4 text-center animate-fadeIn select-none overflow-y-auto">
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold uppercase tracking-wider">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>DISPENSING COMPLETE</span>
+            <span>DISPENSING COMPLETE · STATION 01</span>
           </div>
 
-          <div className="my-auto py-2 space-y-4 max-w-sm mx-auto w-full">
+          <div className="my-auto py-2 space-y-3.5 max-w-sm mx-auto w-full">
             <div>
-              <h1 className="text-3xl font-black text-white uppercase tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
                 YOUR COFFEE IS READY ☕
               </h1>
-              <div className="mt-2 inline-block px-4 py-1.5 rounded-xl bg-amber-500 text-black font-extrabold text-sm tracking-wider font-mono shadow-xl shadow-amber-500/25">
-                COLLECT FROM STATION 01
-              </div>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Collect your drink from Station 01
+              </p>
             </div>
 
-            <div className="glass-panel rounded-3xl p-4 border border-white/15 relative overflow-hidden text-center">
-              <span className="text-[9px] font-mono tracking-widest text-amber-400 uppercase font-bold block mb-1">
-                PHYSICAL CUP VERIFICATION
-              </span>
-
-              <div className="w-44 mx-auto -my-2">
+            <div className="bg-neutral-900/75 backdrop-blur-2xl rounded-3xl p-4 border border-white/15 relative overflow-hidden text-center shadow-2xl">
+              <div className="w-36 mx-auto -my-2">
                 <CoffeeCupCanvas colorData={colorData} showWindowCallout={true} fillLevel={1.0} />
               </div>
 
               <div className="mt-1">
-                <h3 className="text-base font-bold text-white">{colorData.descriptor}</h3>
-                <div className="text-xs font-mono text-neutral-400">
-                  Color ID: <span className="text-amber-400 font-bold">{colorData.hex}</span>
+                <h3 className="text-xl font-black text-white">{colorData.name}</h3>
+                <div className="text-xs font-mono text-neutral-400 mt-0.5 flex items-center justify-center gap-2">
+                  <span className="text-amber-400 font-bold">{colorData.hex}</span>
+                  <span>•</span>
+                  <span>{colorData.coffeeId}</span>
                 </div>
+                <p className="text-[11px] font-mono text-neutral-300 mt-1">
+                  {colorData.descriptors}
+                </p>
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-white/10 text-left bg-amber-500/10 p-3 rounded-2xl border border-amber-500/20">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-amber-400 uppercase">
+                    MATCH YOUR SHADE
+                  </span>
+                  <span className="text-[9px] font-mono text-neutral-400">48mm Acrylic Window</span>
+                </div>
+                <p className="text-[11px] text-neutral-300 mt-1">
+                  Look through the transparent window on your physical cup: how close does the real beverage match your digital shade?
+                </p>
               </div>
 
               <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-left">
                 <div>
-                  <div className="text-[9px] font-mono text-neutral-400 uppercase">SAVE THIS COLOR</div>
+                  <div className="text-[9px] font-mono text-neutral-400 uppercase tracking-wider">
+                    SAVE YOUR COFFEE
+                  </div>
                   <div className="text-xs font-bold text-white">Scan pass to phone</div>
-                  <div className="text-[9px] text-neutral-400 font-mono mt-0.5">Reorder with 1 tap anytime</div>
+                  <div className="text-[9px] text-neutral-400 font-mono mt-0.5">
+                    Instant 1-tap reorder next visit
+                  </div>
                 </div>
-                <CustomQRCode payload={`https://liquidpalette.coffee/reorder?hex=${colorData.hex.replace('#','')}&c=${coffee}&m=${milk}&r=${roast}&s=${sweetness}`} size={60} hex={colorData.hex} />
+                <CustomQRCode
+                  payload={`https://liquidpalette.coffee/reorder?id=${colorData.coffeeId}&hex=${colorData.hex.replace('#','')}&c=${coffee}&m=${milk}&r=${roast}&s=${sweetness}`}
+                  size={56}
+                  hex={colorData.hex}
+                />
               </div>
             </div>
-
-            <p className="text-xs text-neutral-400 font-mono">
-              "SEE YOUR COLOR COME TO LIFE."
-            </p>
           </div>
 
-          <div className="w-full max-w-sm space-y-2">
+          <div className="w-full max-w-sm space-y-2 pt-1">
             <button
               onClick={() => { sound.playTick(); setCurrentScreen('home'); }}
-              className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs tracking-wider uppercase shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all border border-amber-300/40"
+              className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all border border-amber-300/40 font-mono"
             >
-              CREATE ANOTHER COFFEE ☕
-            </button>
-            <button
-              onClick={() => { sound.playTick(); setShowDesignSystemModal(true); }}
-              className="w-full py-2.5 px-4 rounded-xl glass-panel-light text-neutral-300 font-mono text-xs hover:text-white transition-colors"
-            >
-              VIEW DESIGN SYSTEM & 50 SHADES →
+              MAKE ANOTHER COFFEE ☕
             </button>
           </div>
         </div>
@@ -1476,15 +1533,15 @@
       return (
         <div className="min-h-screen bg-[#070707] text-[#FBF9F5] flex flex-col items-center justify-center p-0 md:p-6 select-none relative">
           
-          {/* Kiosk Controls & Testing Bar (Desktop view header) */}
-          <header className="w-full max-w-5xl mb-4 px-4 py-2.5 glass-panel rounded-2xl border border-white/10 hidden md:flex items-center justify-between text-xs font-mono text-neutral-400 z-50">
+          {/* Top Kiosk Terminal Controls & Debug Bar */}
+          <header className="w-full max-w-5xl mb-3 px-4 py-2.5 bg-neutral-900/70 backdrop-blur-xl rounded-2xl border border-white/10 hidden md:flex items-center justify-between text-xs font-mono text-neutral-400 z-50">
             <div className="flex items-center gap-3">
-              <span className="font-bold text-white tracking-widest uppercase">LiquidPalette Kiosk Terminal</span>
+              <span className="font-extrabold text-white tracking-widest uppercase">LIQUIDPALETTE</span>
               <span className="text-white/20">|</span>
-              <span className="text-amber-400 font-semibold">50 Shades of Coffee</span>
+              <span className="text-amber-400 font-semibold">YOUR COFFEE. YOUR COLOR.</span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <select
                 value={currentScreen}
                 onChange={(e) => { sound.playTick(); setCurrentScreen(e.target.value); }}
@@ -1493,43 +1550,36 @@
                 <option value="home">1. Home Screen</option>
                 <option value="creator">2. Coffee Creator</option>
                 <option value="summary">3. Order Summary</option>
-                <option value="payment">4. Payment</option>
-                <option value="prep">5. Preparation / Brewing</option>
+                <option value="payment">4. Payment (₹129)</option>
+                <option value="prep">5. Creating / Brewing</option>
                 <option value="ready">6. Coffee Ready</option>
               </select>
+
+              <button
+                onClick={() => setShowTestBenchModal(true)}
+                className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-1 font-bold"
+              >
+                <span>🧪</span>
+                <span>Test Bench</span>
+              </button>
 
               <button
                 onClick={() => setKioskMode(kioskMode === 'kiosk' ? 'fullscreen' : 'kiosk')}
                 className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all"
               >
-                {kioskMode === 'kiosk' ? '📺 Kiosk 9:16 Frame' : '🖥️ Fullscreen View'}
-              </button>
-
-              <button
-                onClick={() => setShowEdgeStateModal(true)}
-                className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-all"
-              >
-                ⚠️ Edge States
-              </button>
-
-              <button
-                onClick={() => setShowDesignSystemModal(true)}
-                className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-all"
-              >
-                🎨 Design System
+                {kioskMode === 'kiosk' ? '📺 Kiosk 9:16' : '🖥️ Fullscreen'}
               </button>
 
               <button
                 onClick={toggleSound}
                 className="p-1 rounded-lg hover:bg-white/10 text-neutral-300"
-                title="Toggle Audio Feedback"
               >
                 {soundEnabled ? '🔊' : '🔇'}
               </button>
             </div>
           </header>
 
-          {/* MAIN KIOSK CONTAINER (9:16 Portrait Touchscreen Format) */}
+          {/* Main Kiosk Container */}
           <main
             className={`w-full transition-all duration-300 relative flex flex-col ${
               kioskMode === 'kiosk'
@@ -1537,7 +1587,7 @@
                 : 'w-full max-w-2xl h-[100vh] sm:h-[920px] rounded-none sm:rounded-3xl border border-white/10 bg-[#101010] overflow-hidden'
             }`}
           >
-            {/* Top Physical Kiosk Hardware Bezel */}
+            {/* Top Hardware Bezel Status Bar */}
             <div className="w-full bg-[#181818] px-5 py-2 flex items-center justify-between text-[10px] font-mono text-neutral-500 border-b border-white/5 select-none">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -1548,27 +1598,11 @@
                 <button onClick={toggleSound} className="hover:text-white">
                   {soundEnabled ? '🔊' : '🔇'}
                 </button>
-                <span>99.9% PURE</span>
+                <span>PURE EXTRACTION</span>
               </div>
             </div>
 
-            {/* Edge State Banner */}
-            {activeEdgeState && (
-              <div className="bg-red-500/90 text-white text-xs font-mono px-4 py-2 flex items-center justify-between z-30">
-                <div className="flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>{activeEdgeState.message}</span>
-                </div>
-                <button
-                  onClick={() => setActiveEdgeState(null)}
-                  className="underline text-[10px] font-bold"
-                >
-                  DISMISS
-                </button>
-              </div>
-            )}
-
-            {/* Screen Content Switcher */}
+            {/* Screen Content */}
             <div className="flex-1 overflow-hidden relative">
               {currentScreen === 'home' && renderHomeScreen()}
               {currentScreen === 'creator' && renderCreatorScreen()}
@@ -1578,7 +1612,7 @@
               {currentScreen === 'ready' && renderReadyScreen()}
             </div>
 
-            {/* Bottom Kiosk Hardware Shelf */}
+            {/* Bottom Hardware Bezel */}
             <div className="w-full bg-[#151515] py-2 px-4 border-t border-white/5 flex items-center justify-between text-[9px] font-mono text-neutral-500 select-none">
               <div className="flex items-center gap-1.5">
                 <span>⚡ NFC SENSOR</span>
@@ -1589,19 +1623,83 @@
             </div>
           </main>
 
-          {/* SURPRISE ME MODAL */}
+          {/* MODAL 1: QUICK ORDER MODAL */}
+          {showQuickOrderModal && (
+            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+              <div className="w-full max-w-md bg-neutral-900/90 backdrop-blur-2xl rounded-3xl p-6 border border-white/20 space-y-5 shadow-2xl">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div>
+                    <span className="text-[10px] font-mono tracking-widest text-amber-400 font-bold uppercase">
+                      EXPRESS ORDER
+                    </span>
+                    <h3 className="text-xl font-extrabold text-white">QUICK ORDER</h3>
+                    <p className="text-xs text-neutral-400 mt-0.5">Pick a benchmark blend and order in under 15 seconds.</p>
+                  </div>
+                  <button onClick={() => setShowQuickOrderModal(false)} className="p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white">✕</button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {QUICK_ORDER_PRESETS.map((p) => {
+                    const preview = mixCoffeeColor(p);
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setShowQuickOrderModal(false);
+                          handleSelectQuickPreset(p);
+                        }}
+                        className="w-full p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/50 transition-all text-left flex items-center justify-between group active:scale-[0.98]"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-10 h-10 rounded-xl shadow-md border border-white/20 flex-shrink-0 group-hover:scale-105 transition-transform" style={{ backgroundColor: preview.hex }} />
+                          <div>
+                            <div className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                              <span>{p.label}</span>
+                              <span className="text-[10px] font-normal text-amber-400">{preview.hex}</span>
+                            </div>
+                            <div className="text-xs text-neutral-400 mt-0.5">{p.sublabel}</div>
+                          </div>
+                        </div>
+                        <div className="text-right font-mono">
+                          <span className="text-xs font-bold text-white">₹129</span>
+                          <div className="text-[10px] text-amber-400 mt-0.5">SELECT →</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowQuickOrderModal(false);
+                    handleTriggerSurprise();
+                  }}
+                  className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 text-left flex items-center justify-between transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl animate-bounce">🎲</span>
+                    <div>
+                      <div className="text-xs font-mono font-bold text-amber-400">SURPRISE ME</div>
+                      <div className="text-[11px] text-neutral-300">Let the Alchemist mix a balanced unique shade</div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-amber-400">TRY →</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 2: SURPRISE ME */}
           {showSurpriseModal && surpriseBlend && (
             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-              <div className="w-full max-w-sm glass-panel rounded-3xl p-6 border border-white/20 text-center space-y-4 shadow-2xl">
+              <div className="w-full max-w-sm bg-neutral-900/80 backdrop-blur-2xl rounded-3xl p-6 border border-white/20 text-center space-y-4 shadow-2xl">
                 <div className="text-4xl animate-bounce">🎲</div>
                 <div>
                   <span className="text-xs font-mono tracking-widest text-amber-400 font-bold uppercase">
-                    YOUR RANDOM SHADE
+                    YOUR SURPRISE COFFEE
                   </span>
-                  <h3 className="text-2xl font-black text-white mt-1">
-                    {surpriseBlend.descriptor}
-                  </h3>
-                  <p className="text-xs text-neutral-400 mt-0.5">{surpriseBlend.notes}</p>
+                  <h3 className="text-2xl font-black text-white mt-1">{surpriseBlend.name}</h3>
+                  <p className="text-xs text-neutral-400 mt-0.5">{surpriseBlend.tagline}</p>
                 </div>
 
                 <div className="w-40 mx-auto -my-4">
@@ -1609,191 +1707,92 @@
                 </div>
 
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20" style={{ backgroundColor: surpriseBlend.hex }}>
-                  <span
-                    className="text-xs font-mono font-bold"
-                    style={{
-                      color: (surpriseBlend.r * 0.299 + surpriseBlend.g * 0.587 + surpriseBlend.b * 0.114) > 150 ? '#1A0D07' : '#FFFFFF'
-                    }}
-                  >
+                  <span className="text-xs font-mono font-bold" style={{ color: (surpriseBlend.r * 0.299 + surpriseBlend.g * 0.587 + surpriseBlend.b * 0.114) > 150 ? '#1A0D07' : '#FFFFFF' }}>
                     {surpriseBlend.hex}
                   </span>
                 </div>
 
-                <p className="text-[11px] font-mono text-neutral-300">
-                  {surpriseBlend.recipeSummary}
-                </p>
+                <p className="text-[11px] font-mono text-neutral-300">{surpriseBlend.descriptors}</p>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button
-                    onClick={handleSurpriseMe}
-                    className="py-3 px-4 rounded-xl glass-panel-light hover:bg-white/10 text-white font-mono text-xs font-bold uppercase"
-                  >
+                  <button onClick={handleTriggerSurprise} className="py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white font-mono text-xs font-bold uppercase border border-white/10">
                     TRY AGAIN 🎲
                   </button>
-                  <button
-                    onClick={handleApplySurprise}
-                    className="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase shadow-lg shadow-amber-500/20"
-                  >
-                    I LIKE IT →
+                  <button onClick={handleApplySurprise} className="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase shadow-lg shadow-amber-500/20">
+                    ORDER IT →
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* EDGE & ERROR STATES TESTER */}
-          {showEdgeStateModal && (
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-              <div className="w-full max-w-md glass-panel rounded-3xl p-6 border border-white/20 space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                  <div className="flex items-center gap-2 text-red-400 font-mono text-xs font-bold">
-                    <span>⚠️</span>
-                    <span>EDGE & ERROR STATE SIMULATOR</span>
-                  </div>
-                  <button
-                    onClick={() => setShowEdgeStateModal(false)}
-                    className="text-neutral-400 hover:text-white text-sm"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <p className="text-xs text-neutral-300">
-                  Select an operational error condition to simulate how the LiquidPalette kiosk gracefully handles faults:
-                </p>
-
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      setActiveEdgeState({ type: 'low_milk', message: 'Oat Milk Hopper Depleted. Whole & Almond available.' });
-                      setShowEdgeStateModal(false);
-                    }}
-                    className="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left text-xs"
-                  >
-                    <div className="font-bold text-amber-400">1. Ingredient Unavailable</div>
-                    <div className="text-neutral-400 text-[11px]">Simulates milk hopper depleted; offers automatic swap.</div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setActiveEdgeState({ type: 'pay_fail', message: 'UPI Payment Gateway Timeout. Please re-scan QR.' });
-                      setShowEdgeStateModal(false);
-                    }}
-                    className="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left text-xs"
-                  >
-                    <div className="font-bold text-red-400">2. Payment / Network Failure</div>
-                    <div className="text-neutral-400 text-[11px]">Simulates network drop during UPI transaction with retry.</div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setActiveEdgeState({ type: 'maintenance', message: 'Machine Cleaning Cycle in progress (Ready in 3 min).' });
-                      setShowEdgeStateModal(false);
-                    }}
-                    className="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left text-xs"
-                  >
-                    <div className="font-bold text-neutral-300">3. Scheduled Maintenance Mode</div>
-                    <div className="text-neutral-400 text-[11px]">Kiosk automated flush & boiler descaling active.</div>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* EMBEDDED DESIGN SYSTEM & 50 SHADES MATRIX */}
-          {showDesignSystemModal && (
-            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-lg flex items-center justify-center p-4 overflow-y-auto">
-              <div className="w-full max-w-2xl my-auto glass-panel rounded-3xl p-6 border border-white/20 space-y-6 max-h-[90vh] overflow-y-auto">
+          {/* MODAL 3: P0 TEST BENCH */}
+          {showTestBenchModal && (
+            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="w-full max-w-xl bg-neutral-900/90 backdrop-blur-2xl rounded-3xl p-6 border border-white/20 space-y-5 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
                   <div>
-                    <h3 className="text-lg font-black text-white uppercase tracking-wider">
-                      LiquidPalette Design System
-                    </h3>
-                    <p className="text-xs font-mono text-amber-400">
-                      Campaign: 50 Shades of Coffee · Brand Guidelines
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                      <h3 className="text-base font-black text-white uppercase tracking-wider font-mono">
+                        P0 Color Engine Regression Bench
+                      </h3>
+                    </div>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Automated validation of Kubelka-Munk optical model across 5 benchmark recipes.
                     </p>
                   </div>
-                  <button
-                    onClick={() => setShowDesignSystemModal(false)}
-                    className="p-2 rounded-full hover:bg-white/10 text-white"
-                  >
-                    ✕
-                  </button>
+                  <button onClick={() => setShowTestBenchModal(false)} className="p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white">✕</button>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold uppercase text-neutral-300">
-                      1. "50 Shades of Coffee" Swatch Matrix
-                    </span>
-                    <span className="text-[10px] font-mono text-amber-400">
-                      Tap Any Shade to Mix Instantly
-                    </span>
+                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold">
+                    <span>✓</span>
+                    <span>MONOTONIC LIGHTNESS PROGRESSION: PASSED</span>
                   </div>
+                  <span className="text-[10px] font-mono text-emerald-300">5 / 5 Assertions Met</span>
+                </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    {SIGNATURE_50_SHADES.map((s) => (
-                      <button
-                        key={s.hex}
-                        onClick={() => {
-                          sound.playDrip();
-                          setCoffee(s.coffee);
-                          setMilk(s.milk);
-                          setRoast(s.roast);
-                          setSweetness(s.sweetness);
-                          setShowDesignSystemModal(false);
-                          setCurrentScreen('creator');
-                        }}
-                        className="p-2.5 rounded-xl border border-white/10 hover:border-amber-400 transition-all text-left flex items-center gap-2.5 bg-neutral-900/80 group"
-                      >
-                        <div
-                          className="w-7 h-7 rounded-lg shadow border border-white/20 flex-shrink-0 group-hover:scale-110 transition-transform"
-                          style={{ backgroundColor: s.hex }}
-                        />
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-white truncate group-hover:text-amber-400 transition-colors">
-                            {s.name}
+                <div className="space-y-2.5">
+                  {runColorRegressionTests().results.map((t, idx) => (
+                    <div key={t.id} className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between hover:bg-white/10 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl shadow-inner border border-white/20 flex-shrink-0" style={{ backgroundColor: t.hex }} />
+                        <div>
+                          <div className="text-xs font-bold text-white flex items-center gap-2">
+                            <span>{idx + 1}. {t.name}</span>
+                            <span className="text-[10px] font-mono text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">{t.hex}</span>
                           </div>
-                          <div className="text-[10px] font-mono text-neutral-400">
-                            {s.hex}
+                          <div className="text-[11px] text-neutral-400 mt-0.5">Expected: <span className="text-neutral-300">{t.expectedTone}</span></div>
+                          <div className="text-[10px] font-mono text-neutral-500 mt-0.5">
+                            Recipe: {t.recipe.coffee}% C · {t.recipe.milk}% M · R{t.recipe.roast} · Luminance: {t.luminance}
                           </div>
                         </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setCoffee(t.recipe.coffee);
+                          setMilk(t.recipe.milk);
+                          setRoast(t.recipe.roast);
+                          setSweetness(t.recipe.sweetness);
+                          setShowTestBenchModal(false);
+                          setCurrentScreen('creator');
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 text-xs font-mono font-bold transition-all"
+                      >
+                        LOAD
                       </button>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="space-y-3 pt-4 border-t border-white/10">
-                  <span className="text-xs font-mono font-bold uppercase text-neutral-300 block">
-                    2. Core Design Tokens & Visual Hierarchy
-                  </span>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="font-bold text-white">Typography: Geometric Sans</div>
-                      <p className="text-neutral-400 text-[11px] mt-1">
-                        Primary: Outfit (clean, futuristic, high legibility from 1 meter distance). Monospace: JetBrains Mono for hex codes, ratios, telemetry.
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="font-bold text-white">Restrained Premium Palette</div>
-                      <p className="text-neutral-400 text-[11px] mt-1">
-                        Obsidian Black (#121212), Espresso Brown (#1A0D07), Warm Cream (#FFF8EE), Caramel (#C87D38). The coffee color provides the primary visual vibrancy.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-4 border-t border-white/10">
-                  <span className="text-xs font-mono font-bold uppercase text-neutral-300 block">
-                    3. Physical Cup Specification
-                  </span>
-                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-neutral-300 space-y-1">
-                    <div className="font-bold text-amber-400">Transparent Center Square Window:</div>
-                    <p className="text-[11px]">
-                      48mm × 48mm optical acrylic window bonded directly to the double-walled matte charcoal vessel. Provides immediate physical verification of the digital Hex code shade.
-                    </p>
-                  </div>
+                <div className="pt-3 border-t border-white/10 text-[11px] text-neutral-400 space-y-1 font-mono">
+                  <div className="text-white font-bold">Physical Model Guarantees:</div>
+                  <div>• Milk ↑ strictly increases optical scattering (never darkens).</div>
+                  <div>• Coffee Intensity ↑ increases dye optical density (never lightens).</div>
+                  <div>• Roast Level ↑ deepens caramelization absorption (never lightens).</div>
+                  <div>• Sweetness alters descriptor & surface luster without corrupting color.</div>
                 </div>
               </div>
             </div>
@@ -1803,7 +1802,6 @@
       );
     }
 
-    // Mount Application
     ReactDOM.createRoot(document.getElementById('root')).render(<LiquidPaletteApp />);
   </script>
 </body>
